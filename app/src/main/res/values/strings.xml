@@ -1,0 +1,88 @@
+<resources>
+    <string name="app_name">SawtFlow</string>
+    <string name="brand_subtitle">Arabic Voice Intelligence</string>
+    <string name="hero_arabic_quote">فهمٌ أدق. قراراتٌ أوثق. عملٌ أسرع.</string>
+    <string name="hero_tagline">Speech that makes business move.</string>
+    <string name="hero_description">SawtFlow understands how your customers really speak—across Arabic dialects, English switches, noisy calls, and the intent hiding between the words.</string>
+    
+    <!-- Navigation -->
+    <string name="tab_studio">Studio</string>
+    <string name="tab_orders">Orders</string>
+    <string name="tab_audit">Audit Log</string>
+    <string name="tab_overview">Overview</string>
+    
+    <!-- Studio -->
+    <string name="studio_eyebrow">VOICE INTELLIGENCE WORKSPACE</string>
+    <string name="studio_title">Turn voice into the next right action.</string>
+    <string name="studio_lead">Upload or record a conversation, correct speech recognition, and turn customer intent into a verified business response.</string>
+    
+    <string name="step_1_input">01 / INPUT</string>
+    <string name="step_2_understand">02 / UNDERSTAND</string>
+    <string name="step_3_intent">03 / INTENT</string>
+    <string name="step_4_action">04 / ACTION</string>
+    <string name="step_5_approval">05 / APPROVAL</string>
+    
+    <string name="source_title">Start with a real voice.</string>
+    <string name="source_lead">Use an Arabic recording, record directly, or load a colloquial dialect sample.</string>
+    <string name="dialect_label">Colloquial Dialect</string>
+    <string name="dialect_gulf">Gulf / Saudi (خليجي / سعودي)</string>
+    <string name="dialect_egyptian">Egyptian (مصري)</string>
+    <string name="dialect_levantine">Levantine (شامي)</string>
+    <string name="dialect_maghrebi">Maghrebi (مغاربي)</string>
+    
+    <string name="action_record">Record Voice</string>
+    <string name="action_stop_recording">Stop Recording</string>
+    <string name="action_sample">Use Sample Message</string>
+    <string name="action_edit_transcript">Edit Transcript</string>
+    <string name="action_save_transcript">Save Correction</string>
+    <string name="action_generate">Generate Transcript</string>
+    <string name="action_analyze">Analyze Intent →</string>
+    <string name="action_retrieve">Retrieve Order Status →</string>
+    <string name="action_approve">Approve Response ✓</string>
+    
+    <string name="transcript_title">Correct the meaning, not the speaker.</string>
+    <string name="transcript_lead">SawtFlow preserves intent while you refine recognition errors.</string>
+    <string name="intent_title">What the customer needs.</string>
+    <string name="action_title">Retrieve the right evidence.</string>
+    <string name="response_title">Respond with context.</string>
+    
+    <string name="detected_intent_label">DETECTED INTENT</string>
+    <string name="extracted_order_label">EXTRACTED ORDER</string>
+    <string name="language_label">LANGUAGE</string>
+    <string name="urgency_label">URGENCY</string>
+    
+    <string name="intent_status">Order status</string>
+    <string name="intent_cancel">Cancel order</string>
+    <string name="intent_modify">Modify order</string>
+    
+    <string name="status_ready">READY</string>
+    <string name="status_speech_ready">SPEECH RECOGNITION READY</string>
+    <string name="status_approved_lookup">APPROVED LOOKUP</string>
+    <string name="status_human_gate">HUMAN GATE</string>
+    <string name="status_approved_ready">Approved · ready to send</string>
+    
+    <string name="order_id_label">ORDER ID</string>
+    <string name="order_found">Order found in database</string>
+    <string name="order_not_found">Order not found. Valid IDs: SF-1048, SF-2086, SF-3312, SF-4420, SF-5177...</string>
+    
+    <!-- Overview & Capabilities -->
+    <string name="cap_nuance_title">Hear the nuance</string>
+    <string name="cap_nuance_desc">Recognize Arabic dialects and Arabic-English mixed speech without forcing customers into rigid scripts.</string>
+    <string name="cap_resolve_title">Resolve, don’t rewrite</string>
+    <string name="cap_resolve_desc">Correct recognition errors while retaining what the speaker actually meant—and the context around it.</string>
+    <string name="cap_intent_title">Make intent actionable</string>
+    <string name="cap_intent_desc">Extract the request, people, dates, references, and details that make a business action possible.</string>
+    
+    <!-- Trust & Verification -->
+    <string name="trust_title">Control stays explicit.</string>
+    <string name="trust_desc">Your customer conversations carry context. SawtFlow protects it with a deliberate action layer: retrieve, check, confirm, then respond.</string>
+    
+    <!-- Contact demo -->
+    <string name="demo_request_title">Request a conversation</string>
+    <string name="demo_request_lead">Tell us where Arabic customer conversations are slowing your business down.</string>
+    <string name="input_name">Your Name</string>
+    <string name="input_email">Work Email</string>
+    <string name="input_notes">What would you like to automate?</string>
+    <string name="btn_submit_demo">Submit Request</string>
+    <string name="demo_submitted_msg">Thank you! Your request has been recorded in the demonstration inquiry queue.</string>
+</resources>
