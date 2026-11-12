@@ -5,6 +5,10 @@ import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.scaleIn
+import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -35,6 +39,7 @@ import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.GraphicEq
 import androidx.compose.material.icons.filled.History
+import androidx.compose.material.icons.filled.KeyboardArrowDown
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material.icons.filled.Pause
 import androidx.compose.material.icons.filled.PlayArrow
@@ -47,6 +52,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
+import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -59,6 +65,11 @@ import androidx.compose.material3.SuggestionChip
 import androidx.compose.material3.SuggestionChipDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.derivedStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
+import kotlinx.coroutines.launch
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -96,7 +107,11 @@ fun StudioScreen(
     modifier: Modifier = Modifier
 ) {
     val scrollState = rememberScrollState()
+    val coroutineScope = rememberCoroutineScope()
     val isAr = state.language == AppLanguage.AR
+    val canScrollDown by remember {
+        derivedStateOf { scrollState.value < (scrollState.maxValue - 150) }
+    }
 
     val context = LocalContext.current
     val audioPickerLauncher = rememberLauncherForActivityResult(
@@ -122,14 +137,15 @@ fun StudioScreen(
         }
     }
 
-    Column(
-        modifier = modifier
-            .fillMaxSize()
-            .background(NavyPrimary)
-            .verticalScroll(scrollState)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
-    ) {
+    Box(modifier = modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(NavyPrimary)
+                .verticalScroll(scrollState)
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(20.dp)
+        ) {
         // Workspace Eyebrow & Hero Header
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
@@ -1215,5 +1231,39 @@ fun StudioScreen(
         }
 
         Spacer(modifier = Modifier.height(20.dp))
+        }
+
+        // Floating Scroll Down Quick Action
+        AnimatedVisibility(
+            visible = canScrollDown,
+            enter = fadeIn() + scaleIn(),
+            exit = fadeOut() + scaleOut(),
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        ) {
+            FloatingActionButton(
+                onClick = {
+                    coroutineScope.launch {
+                        val nextTarget = (scrollState.value + 650).coerceAtMost(scrollState.maxValue)
+                        scrollState.animateScrollTo(nextTarget)
+                    }
+                },
+                containerColor = NavyCard,
+                contentColor = CyanAccent,
+                shape = CircleShape,
+                modifier = Modifier
+                    .size(46.dp)
+                    .border(1.5.dp, CyanAccent.copy(alpha = 0.6f), CircleShape)
+                    .testTag("scroll_down_floating_button")
+            ) {
+                Icon(
+                    imageVector = Icons.Default.KeyboardArrowDown,
+                    contentDescription = if (isAr) "تمرير لأسفل" else "Scroll down",
+                    tint = CyanAccent,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+        }
     }
 }
