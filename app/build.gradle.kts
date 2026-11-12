@@ -1,6 +1,8 @@
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.kotlin.compose)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.ksp)
 }
 
 android {
@@ -52,6 +54,7 @@ android {
 
     buildFeatures {
         compose = true
+        buildConfig = true
     }
 }
 
@@ -66,4 +69,11 @@ dependencies {
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
     implementation(libs.androidx.material.icons.extended)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.ai)
+    implementation(libs.firebase.appcheck.recaptcha)
+    implementation(libs.firebase.appcheck.debug)
+    implementation(libs.androidx.room.runtime)
+    implementation(libs.androidx.room.ktx)
+    ksp(libs.androidx.room.compiler)
 }

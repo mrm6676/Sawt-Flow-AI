@@ -7,9 +7,14 @@
     
     <!-- Navigation -->
     <string name="tab_studio">Studio</string>
+    <string name="tab_history">History</string>
     <string name="tab_orders">Orders</string>
     <string name="tab_audit">Audit Log</string>
     <string name="tab_overview">Overview</string>
+    
+    <!-- History -->
+    <string name="history_title">Voice Transcript History</string>
+    <string name="history_subtitle">Local Room Database · Gemini 3.8 Flash Transcripts</string>
     
     <!-- Studio -->
     <string name="studio_eyebrow">VOICE INTELLIGENCE WORKSPACE</string>

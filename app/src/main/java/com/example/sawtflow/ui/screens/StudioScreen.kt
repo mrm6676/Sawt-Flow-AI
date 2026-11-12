@@ -1,5 +1,9 @@
 package com.example.sawtflow.ui.screens
 
+import android.net.Uri
+import android.provider.OpenableColumns
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -22,21 +26,31 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.AudioFile
+import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.CloudUpload
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.GraphicEq
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Mic
+import androidx.compose.material.icons.filled.Pause
+import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Save
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.filled.Stop
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
-import androidx.compose.material3.DividerDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
@@ -49,11 +63,15 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.sawtflow.ui.theme.CairoFontFamily
+import java.util.Locale
 import com.example.sawtflow.data.model.AppLanguage
 import com.example.sawtflow.data.model.Dialect
 import com.example.sawtflow.data.model.IntentType
@@ -66,6 +84,7 @@ import com.example.sawtflow.ui.theme.NavyCard
 import com.example.sawtflow.ui.theme.NavyLight
 import com.example.sawtflow.ui.theme.NavyPrimary
 import com.example.sawtflow.ui.theme.NavySurface
+import com.example.sawtflow.ui.viewmodel.AppTab
 import com.example.sawtflow.ui.viewmodel.SawtFlowViewModel
 import com.example.sawtflow.ui.viewmodel.StudioUiState
 
@@ -78,6 +97,30 @@ fun StudioScreen(
 ) {
     val scrollState = rememberScrollState()
     val isAr = state.language == AppLanguage.AR
+
+    val context = LocalContext.current
+    val audioPickerLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.GetContent()
+    ) { uri: Uri? ->
+        uri?.let {
+            var fileName = "voice_recording.wav"
+            var fileSizeStr = "1.5 MB"
+            try {
+                context.contentResolver.query(it, null, null, null, null)?.use { cursor ->
+                    val nameIndex = cursor.getColumnIndex(OpenableColumns.DISPLAY_NAME)
+                    val sizeIndex = cursor.getColumnIndex(OpenableColumns.SIZE)
+                    if (cursor.moveToFirst()) {
+                        if (nameIndex != -1) fileName = cursor.getString(nameIndex) ?: fileName
+                        if (sizeIndex != -1) {
+                            val bytes = cursor.getLong(sizeIndex)
+                            fileSizeStr = String.format(Locale.getDefault(), "%.1f MB", bytes / (1024f * 1024f))
+                        }
+                    }
+                }
+            } catch (_: Exception) {}
+            viewModel.onAudioFileUploaded(fileName, fileSizeStr, it.toString())
+        }
+    }
 
     Column(
         modifier = modifier
@@ -143,7 +186,7 @@ fun StudioScreen(
                 )
 
                 Text(
-                    text = if (isAr) "اختر لهجة عامية عربية أو استخدم التسجيل المباشر:" else "Select a colloquial Arabic dialect or use direct recording:",
+                    text = if (isAr) "اختر لهجة عامية عربية:" else "Select a colloquial Arabic dialect:",
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 13.sp
                 )
@@ -173,6 +216,268 @@ fun StudioScreen(
                                 borderColor = if (isSelected) CyanAccent else NavyLight
                             )
                         )
+                    }
+                }
+
+                // Upload Audio Recording Dropzone Card
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(NavyCard)
+                        .border(
+                            width = 1.5.dp,
+                            color = if (state.uploadedAudioName != null) CyanAccent else CyanAccent.copy(alpha = 0.4f),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .clickable { audioPickerLauncher.launch("audio/*") }
+                        .padding(16.dp)
+                        .testTag("upload_audio_dropzone"),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(46.dp)
+                                .clip(CircleShape)
+                                .background(CyanAccent.copy(alpha = 0.15f)),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CloudUpload,
+                                contentDescription = "Upload",
+                                tint = CyanAccent,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+
+                        Text(
+                            text = if (isAr) "رفع تسجيل صوتي عربي" else "Upload Arabic Voice Recording",
+                            color = Color.White,
+                            fontSize = 15.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+
+                        Text(
+                            text = if (isAr)
+                                "MP3 أو WAV أو M4A أو AAC · انقر لاختيار ملف صوتي من جهازك"
+                            else
+                                "MP3, WAV, M4A, AAC · up to 25 MB · Tap to browse",
+                            color = Color.White.copy(alpha = 0.65f),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+
+                // Audio Preview Player Card (Visible when audio uploaded or selected)
+                AnimatedVisibility(visible = state.uploadedAudioName != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(12.dp))
+                            .background(NavyCard)
+                            .border(1.dp, CyanAccent.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
+                            .padding(14.dp)
+                            .testTag("audio_preview_card")
+                    ) {
+                        Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    Box(
+                                        modifier = Modifier
+                                            .clip(RoundedCornerShape(4.dp))
+                                            .background(CyanAccent)
+                                            .padding(horizontal = 6.dp, vertical = 2.dp)
+                                    ) {
+                                        Text(
+                                            text = "AUDIO",
+                                            color = NavyPrimary,
+                                            fontSize = 9.sp,
+                                            fontFamily = FontFamily.Monospace,
+                                            fontWeight = FontWeight.Bold
+                                        )
+                                    }
+                                    Column {
+                                        Text(
+                                            text = state.uploadedAudioName ?: "recording.wav",
+                                            color = Color.White,
+                                            fontSize = 13.sp,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines = 1
+                                        )
+                                        Text(
+                                            text = state.uploadedAudioSize ?: "1.4 MB",
+                                            color = Color.White.copy(alpha = 0.5f),
+                                            fontSize = 10.sp,
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                    }
+                                }
+
+                                IconButton(
+                                    onClick = { viewModel.clearUploadedAudio() },
+                                    modifier = Modifier.size(28.dp)
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Close,
+                                        contentDescription = "Remove audio",
+                                        tint = Color.White.copy(alpha = 0.6f),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
+
+                            // Playback controls & Progress
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(10.dp)
+                            ) {
+                                IconButton(
+                                    onClick = { viewModel.toggleAudioPlayback() },
+                                    modifier = Modifier
+                                        .size(36.dp)
+                                        .clip(CircleShape)
+                                        .background(if (state.isPlayingAudio) AmberAccent else CyanAccent)
+                                        .testTag("audio_playback_button")
+                                ) {
+                                    Icon(
+                                        imageVector = if (state.isPlayingAudio) Icons.Default.Pause else Icons.Default.PlayArrow,
+                                        contentDescription = if (state.isPlayingAudio) "Pause" else "Play",
+                                        tint = NavyPrimary,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                }
+
+                                Column(modifier = Modifier.weight(1f)) {
+                                    LinearProgressIndicator(
+                                        progress = { state.playbackProgress },
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(6.dp)
+                                            .clip(RoundedCornerShape(3.dp)),
+                                        color = CyanAccent,
+                                        trackColor = NavyLight
+                                    )
+                                    Spacer(modifier = Modifier.height(4.dp))
+                                    Row(
+                                        modifier = Modifier.fillMaxWidth(),
+                                        horizontalArrangement = Arrangement.SpaceBetween
+                                    ) {
+                                        Text(
+                                            text = state.playbackPosition,
+                                            color = CyanAccent,
+                                            fontSize = 10.sp,
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                        Text(
+                                            text = state.playbackDuration,
+                                            color = Color.White.copy(alpha = 0.5f),
+                                            fontSize = 10.sp,
+                                            fontFamily = FontFamily.Monospace
+                                        )
+                                    }
+                                }
+                            }
+
+                            // Transcribe with Gemini API Button
+                            Button(
+                                onClick = { viewModel.transcribeAudioWithGemini(context) },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .testTag("gemini_transcribe_button"),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = AmberAccent,
+                                    contentColor = NavyPrimary
+                                ),
+                                shape = RoundedCornerShape(8.dp),
+                                enabled = !state.isTranscribingWithGemini
+                            ) {
+                                if (state.isTranscribingWithGemini) {
+                                    CircularProgressIndicator(
+                                        modifier = Modifier.size(16.dp),
+                                        color = NavyPrimary,
+                                        strokeWidth = 2.dp
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = if (isAr) "جارٍ المعالجة عبر Gemini 3.8 Flash..." else "Transcribing with Gemini 3.8 Flash...",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 12.sp
+                                    )
+                                } else {
+                                    Icon(
+                                        imageVector = Icons.Default.AutoAwesome,
+                                        contentDescription = "Gemini AI",
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        text = if (isAr) "تفريغ الصوت عبر Gemini API ✨" else "Transcribe with Gemini API ✨",
+                                        fontWeight = FontWeight.Bold,
+                                        fontSize = 13.sp
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
+
+                // Preset audio samples section
+                Text(
+                    text = if (isAr) "أو اختر عينة تسجيل مسبقة:" else "Or try pre-recorded voice samples:",
+                    color = Color.White.copy(alpha = 0.6f),
+                    fontSize = 12.sp
+                )
+
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    val presetClips = listOf(
+                        Triple("SF-1048_gulf_inquiry.wav", "Where is my order SF-1048? They said it would arrive today.", "أبغى أعرف وين وصل طلبي SF-1048، قالوا بيوصل اليوم."),
+                        Triple("SF-4420_dubai_delay.wav", "Can you check status of delayed shipment SF-4420 in Dubai?", "ممكن تفحص حالة الشحنة المتأخرة SF-4420 في دبي؟"),
+                        Triple("SF-5177_cancellation.mp3", "Please cancel my order SF-5177 immediately.", "أرجو إلغاء طلبي رقم SF-5177 فوراً.")
+                    )
+                    presetClips.forEach { (clipName, enText, arText) ->
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(NavyCard)
+                                .border(1.dp, NavyLight, RoundedCornerShape(8.dp))
+                                .clickable {
+                                    viewModel.loadPresetAudio(clipName, "1.2 MB", enText, arText)
+                                }
+                                .padding(horizontal = 8.dp, vertical = 6.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.AudioFile,
+                                    contentDescription = null,
+                                    tint = AmberAccent,
+                                    modifier = Modifier.size(14.dp)
+                                )
+                                Text(
+                                    text = clipName,
+                                    color = Color.White.copy(alpha = 0.85f),
+                                    fontSize = 11.sp,
+                                    fontFamily = FontFamily.Monospace
+                                )
+                            }
+                        }
                     }
                 }
 
@@ -280,11 +585,93 @@ fun StudioScreen(
                     }
                 }
 
+                // Gemini Model Indicator and trigger
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.AutoAwesome,
+                            contentDescription = null,
+                            tint = AmberAccent,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = "Gemini 3.8 Flash Speech AI",
+                            color = AmberAccent,
+                            fontFamily = FontFamily.Monospace,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+
+                    OutlinedButton(
+                        onClick = { viewModel.transcribeAudioWithGemini(context) },
+                        enabled = !state.isTranscribingWithGemini,
+                        shape = RoundedCornerShape(20.dp),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AmberAccent),
+                        modifier = Modifier.height(32.dp)
+                    ) {
+                        Text(
+                            text = if (isAr) "تفريغ عبر Gemini ✨" else "Transcribe with Gemini ✨",
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                // Success or Error banner
+                AnimatedVisibility(visible = state.geminiSuccessMessage != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(GreenSuccess.copy(alpha = 0.2f))
+                            .border(1.dp, GreenSuccess, RoundedCornerShape(8.dp))
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = "✓ ${state.geminiSuccessMessage}",
+                            color = Color(0xFF81C784),
+                            fontSize = 12.sp,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                AnimatedVisibility(visible = state.geminiError != null) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(Color(0xFFBA1A1A).copy(alpha = 0.2f))
+                            .border(1.dp, Color(0xFFBA1A1A), RoundedCornerShape(8.dp))
+                            .padding(8.dp)
+                    ) {
+                        Text(
+                            text = "⚠ ${state.geminiError}",
+                            color = Color(0xFFFFB4AB),
+                            fontSize = 12.sp
+                        )
+                    }
+                }
+
                 // Transcript editor box
                 OutlinedTextField(
                     value = state.transcriptText,
                     onValueChange = { viewModel.updateTranscript(it) },
                     readOnly = !state.isEditingTranscript,
+                    textStyle = TextStyle(
+                        fontFamily = CairoFontFamily,
+                        fontSize = 15.sp,
+                        color = Color.White,
+                        lineHeight = 24.sp
+                    ),
                     modifier = Modifier
                         .fillMaxWidth()
                         .testTag("transcript_input_field"),
@@ -308,6 +695,35 @@ fun StudioScreen(
                     }
                 )
 
+                if (state.historySaveMessage != null) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .testTag("history_save_message_card"),
+                        colors = CardDefaults.cardColors(containerColor = GreenSuccess.copy(alpha = 0.15f)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.CheckCircle,
+                                contentDescription = null,
+                                tint = GreenSuccess,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = state.historySaveMessage,
+                                color = GreenSuccess,
+                                fontSize = 12.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween,
@@ -320,19 +736,44 @@ fun StudioScreen(
                         fontFamily = FontFamily.Monospace
                     )
 
-                    Button(
-                        onClick = { viewModel.analyzeIntent() },
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = CyanAccent,
-                            contentColor = NavyPrimary
-                        ),
-                        shape = RoundedCornerShape(8.dp),
-                        modifier = Modifier.testTag("analyze_intent_button")
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = if (isAr) "تحليل النية ←" else "Analyze intent →",
-                            fontWeight = FontWeight.Bold
-                        )
+                        OutlinedButton(
+                            onClick = { viewModel.saveCurrentTranscriptToHistory() },
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AmberAccent),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, AmberAccent.copy(alpha = 0.5f)),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.testTag("save_transcript_history_button")
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Save,
+                                contentDescription = null,
+                                modifier = Modifier.size(15.dp)
+                            )
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text(
+                                text = if (isAr) "حفظ بالسجل" else "Save to DB",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+
+                        Button(
+                            onClick = { viewModel.analyzeIntent() },
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = CyanAccent,
+                                contentColor = NavyPrimary
+                            ),
+                            shape = RoundedCornerShape(8.dp),
+                            modifier = Modifier.testTag("analyze_intent_button")
+                        ) {
+                            Text(
+                                text = if (isAr) "تحليل النية ←" else "Analyze intent →",
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
                     }
                 }
             }

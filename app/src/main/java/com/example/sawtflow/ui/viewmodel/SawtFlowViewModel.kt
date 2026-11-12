@@ -1,15 +1,26 @@
 package com.example.sawtflow.ui.viewmodel
 
+import android.app.Application
+import android.content.Context
+import android.net.Uri
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import com.example.sawtflow.data.local.AppDatabase
+import com.example.sawtflow.data.local.SavedTranscript
+import com.example.sawtflow.data.local.TranscriptHistoryRepository
 import com.example.sawtflow.data.model.AppLanguage
 import com.example.sawtflow.data.model.AuditLogEntry
 import com.example.sawtflow.data.model.DemoInquiry
 import com.example.sawtflow.data.model.Dialect
 import com.example.sawtflow.data.model.IntentType
 import com.example.sawtflow.data.model.Order
+import com.example.sawtflow.data.repository.GeminiTranscriptionService
 import com.example.sawtflow.data.repository.SawtFlowRepository
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.TimeoutCancellationException
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
@@ -20,7 +31,7 @@ import kotlinx.coroutines.launch
 import java.util.regex.Pattern
 
 enum class AppTab {
-    STUDIO, ORDERS, AUDIT, OVERVIEW
+    STUDIO, HISTORY, ORDERS, AUDIT, OVERVIEW
 }
 
 data class StudioUiState(
@@ -57,12 +68,39 @@ data class StudioUiState(
     val demoName: String = "",
     val demoEmail: String = "",
     val demoNotes: String = "",
-    val isDemoSubmitted: Boolean = false
+    val isDemoSubmitted: Boolean = false,
+
+    // Uploaded audio file state
+    val uploadedAudioName: String? = null,
+    val uploadedAudioSize: String? = null,
+    val uploadedAudioUri: String? = null,
+    val isPlayingAudio: Boolean = false,
+    val playbackProgress: Float = 0f,
+    val playbackPosition: String = "00:00",
+    val playbackDuration: String = "00:18",
+
+    // Gemini API Speech-to-Text State
+    val isTranscribingWithGemini: Boolean = false,
+    val geminiError: String? = null,
+    val geminiSuccessMessage: String? = null,
+
+    // Local History (Room Database) State
+    val historySaveMessage: String? = null
 )
 
 class SawtFlowViewModel(
-    private val repository: SawtFlowRepository = SawtFlowRepository()
-) : ViewModel() {
+    application: Application,
+    private val repository: SawtFlowRepository,
+    private val historyRepository: TranscriptHistoryRepository
+) : AndroidViewModel(application) {
+
+    constructor(application: Application) : this(
+        application = application,
+        repository = SawtFlowRepository(),
+        historyRepository = TranscriptHistoryRepository(
+            AppDatabase.getInstance(application).savedTranscriptDao()
+        )
+    )
 
     private val _uiState = MutableStateFlow(StudioUiState())
     val uiState: StateFlow<StudioUiState> = _uiState.asStateFlow()
@@ -72,6 +110,9 @@ class SawtFlowViewModel(
 
     val auditLogs: StateFlow<List<AuditLogEntry>> = repository.auditLogs
         .stateIn(viewModelScope, SharingStarted.Lazily, emptyList())
+
+    val savedTranscripts: StateFlow<List<SavedTranscript>> = historyRepository.allTranscripts
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private var recordingJob: Job? = null
 
@@ -325,5 +366,305 @@ class SawtFlowViewModel(
             actor = "guest",
             details = "Inquiry registered for: ${_uiState.value.demoName} (${_uiState.value.demoEmail})"
         )
+    }
+
+    private var playbackJob: Job? = null
+
+    fun onAudioFileUploaded(name: String, sizeStr: String, uriString: String? = null) {
+        val isAr = _uiState.value.language == AppLanguage.AR
+        _uiState.value = _uiState.value.copy(
+            uploadedAudioName = name,
+            uploadedAudioSize = sizeStr,
+            uploadedAudioUri = uriString,
+            isPlayingAudio = false,
+            playbackProgress = 0f,
+            playbackPosition = "00:00",
+            audioStatusMessage = if (isAr) "تم تحميل الصوت: $name · جاهز للمعاينة والتوليد" else "Audio loaded: $name · preview before sending",
+            confidence = "97.8%",
+            isApproved = false,
+            isRetrieved = false
+        )
+        // Check if file name mentions an order ID
+        val pattern = Pattern.compile("\\bSF[-\\s]?\\d{4}\\b", Pattern.CASE_INSENSITIVE)
+        val matcher = pattern.matcher(name)
+        if (matcher.find()) {
+            val orderId = matcher.group().uppercase().replace("\\s+".toRegex(), "-")
+            val sampleText = if (isAr) {
+                "أحتاج أعرف تفاصيل وموقع طلبي $orderId وهل سيصل اليوم؟"
+            } else {
+                "I need to know the details and location of my order $orderId and if it arrives today?"
+            }
+            _uiState.value = _uiState.value.copy(transcriptText = sampleText)
+            analyzeCurrentTranscript(sampleText)
+        }
+
+        repository.logEvent(
+            eventType = "audio.uploaded",
+            orderId = _uiState.value.extractedOrderId,
+            actor = "user",
+            details = "Uploaded voice recording: $name ($sizeStr)"
+        )
+    }
+
+    fun toggleAudioPlayback() {
+        if (_uiState.value.isPlayingAudio) {
+            pauseAudioPlayback()
+        } else {
+            startAudioPlayback()
+        }
+    }
+
+    private fun startAudioPlayback() {
+        _uiState.value = _uiState.value.copy(isPlayingAudio = true)
+        playbackJob?.cancel()
+        playbackJob = viewModelScope.launch {
+            val totalSeconds = 18
+            var currentSec = (_uiState.value.playbackProgress * totalSeconds).toInt()
+            while (currentSec < totalSeconds && _uiState.value.isPlayingAudio) {
+                delay(500)
+                currentSec++
+                val prog = (currentSec.toFloat() / totalSeconds.toFloat()).coerceIn(0f, 1f)
+                val posStr = String.format("%02d:%02d", currentSec / 60, currentSec % 60)
+                _uiState.value = _uiState.value.copy(
+                    playbackProgress = prog,
+                    playbackPosition = posStr
+                )
+            }
+            if (currentSec >= totalSeconds) {
+                _uiState.value = _uiState.value.copy(
+                    isPlayingAudio = false,
+                    playbackProgress = 0f,
+                    playbackPosition = "00:00"
+                )
+            }
+        }
+    }
+
+    private fun pauseAudioPlayback() {
+        playbackJob?.cancel()
+        _uiState.value = _uiState.value.copy(isPlayingAudio = false)
+    }
+
+    fun clearUploadedAudio() {
+        playbackJob?.cancel()
+        val isAr = _uiState.value.language == AppLanguage.AR
+        _uiState.value = _uiState.value.copy(
+            uploadedAudioName = null,
+            uploadedAudioSize = null,
+            uploadedAudioUri = null,
+            isPlayingAudio = false,
+            playbackProgress = 0f,
+            playbackPosition = "00:00",
+            audioStatusMessage = if (isAr) "تمت إزالة الصوت المرفوع" else "Uploaded audio cleared"
+        )
+    }
+
+    fun loadPresetAudio(fileName: String, sizeStr: String, textEn: String, textAr: String) {
+        val isAr = _uiState.value.language == AppLanguage.AR
+        val transcript = if (isAr) textAr else textEn
+        _uiState.value = _uiState.value.copy(
+            uploadedAudioName = fileName,
+            uploadedAudioSize = sizeStr,
+            uploadedAudioUri = null,
+            isPlayingAudio = false,
+            playbackProgress = 0f,
+            playbackPosition = "00:00",
+            transcriptText = transcript,
+            audioStatusMessage = if (isAr) "تم تحميل العينة: $fileName" else "Preset audio sample loaded: $fileName",
+            confidence = "98.2%",
+            isApproved = false,
+            isRetrieved = false
+        )
+        analyzeCurrentTranscript(transcript)
+        repository.logEvent(
+            eventType = "audio.preset_loaded",
+            orderId = _uiState.value.extractedOrderId,
+            actor = "user",
+            details = "Loaded preset audio recording: $fileName"
+        )
+    }
+
+    private val geminiService = GeminiTranscriptionService()
+
+    fun transcribeAudioWithGemini(context: Context) {
+        val currentState = _uiState.value
+        val isAr = currentState.language == AppLanguage.AR
+        val audioUri = currentState.uploadedAudioUri?.let { Uri.parse(it) }
+
+        _uiState.value = currentState.copy(
+            isTranscribingWithGemini = true,
+            geminiError = null,
+            geminiSuccessMessage = null,
+            audioStatusMessage = if (isAr) "جارٍ إرسال التسجيل إلى Gemini للتعرف على الصوت العربي..." else "Sending audio to Gemini API for Arabic transcription..."
+        )
+
+        viewModelScope.launch {
+            try {
+                val result = geminiService.transcribeArabicAudio(
+                    context = context,
+                    audioUri = audioUri,
+                    audioFileName = currentState.uploadedAudioName,
+                    dialectHint = currentState.selectedDialect.labelEn
+                )
+
+                _uiState.value = _uiState.value.copy(
+                    transcriptText = result.transcript,
+                    confidence = result.confidenceScore,
+                    isTranscribingWithGemini = false,
+                    geminiSuccessMessage = if (isAr) "تم التفريغ الصوتي بنجاح عبر Gemini 3.8 Flash" else "Successfully transcribed with Gemini 3.8 Flash",
+                    audioStatusMessage = if (isAr) "اكتمل التفريغ عبر Gemini API" else "Gemini transcription completed ✓",
+                    isApproved = false,
+                    isRetrieved = false
+                )
+
+                // Run intent analysis on the newly transcribed text
+                analyzeCurrentTranscript(result.transcript)
+
+                // Auto retrieve if an order ID was extracted
+                result.extractedOrderHint?.let { orderId ->
+                    retrieveOrder(orderId)
+                }
+
+                // Automatically save successful transcript to local Room database
+                viewModelScope.launch {
+                    try {
+                        historyRepository.saveTranscript(
+                            transcriptText = result.transcript,
+                            audioFileName = currentState.uploadedAudioName ?: "Live Voice Recording",
+                            dialect = result.detectedDialect,
+                            detectedIntent = _uiState.value.detectedIntent.id,
+                            extractedOrderId = _uiState.value.extractedOrderId,
+                            confidence = result.confidenceScore,
+                            source = "Gemini 3.8 Flash"
+                        )
+                        repository.logEvent(
+                            eventType = "transcript.saved_to_room",
+                            orderId = _uiState.value.extractedOrderId,
+                            actor = "room.database",
+                            details = "Persisted transcript to Room database: '${result.transcript.take(40)}...'"
+                        )
+                    } catch (e: Exception) {
+                        // Non-blocking log
+                    }
+                }
+
+                repository.logEvent(
+                    eventType = "gemini.transcription_completed",
+                    orderId = _uiState.value.extractedOrderId,
+                    actor = "gemini-3.8-flash",
+                    details = "Transcribed Arabic speech (${result.detectedDialect}): '${result.transcript.take(60)}...'"
+                )
+
+            } catch (e: TimeoutCancellationException) {
+                _uiState.value = _uiState.value.copy(
+                    isTranscribingWithGemini = false,
+                    geminiError = if (isAr) "انتهت مهلة الاتصال بـ Gemini API بعد 60 ثانية. يرجى المحاولة مرة أخرى." else "Gemini transcription timed out after 60 seconds. Please try again."
+                )
+                repository.logEvent(
+                    eventType = "gemini.transcription_timeout",
+                    orderId = _uiState.value.extractedOrderId,
+                    actor = "gemini-3.8-flash",
+                    details = "Request timed out after 60 seconds."
+                )
+            } catch (e: CancellationException) {
+                throw e
+            } catch (e: Exception) {
+                val errorMsg = e.localizedMessage ?: "Gemini API request failed."
+                _uiState.value = _uiState.value.copy(
+                    isTranscribingWithGemini = false,
+                    geminiError = if (isAr) "تعذر إكمال التفريغ عبر Gemini: $errorMsg" else "Gemini transcription failed: $errorMsg"
+                )
+                repository.logEvent(
+                    eventType = "gemini.transcription_failed",
+                    orderId = _uiState.value.extractedOrderId,
+                    actor = "gemini-3.8-flash",
+                    details = "Error: $errorMsg"
+                )
+            }
+        }
+    }
+
+    fun saveCurrentTranscriptToHistory(source: String = "Studio Saved") {
+        val state = _uiState.value
+        viewModelScope.launch {
+            try {
+                historyRepository.saveTranscript(
+                    transcriptText = state.transcriptText,
+                    audioFileName = state.uploadedAudioName ?: "Studio Transcript",
+                    dialect = state.selectedDialect.labelEn,
+                    detectedIntent = state.detectedIntent.id,
+                    extractedOrderId = state.extractedOrderId,
+                    confidence = state.confidence,
+                    source = source
+                )
+                val msg = if (state.language == AppLanguage.AR) "تم حفظ التفريغ في قاعدة البيانات المحلية (Room) ✓" else "Saved to Room Database history ✓"
+                _uiState.value = _uiState.value.copy(historySaveMessage = msg)
+                repository.logEvent(
+                    eventType = "transcript.saved_to_room",
+                    orderId = state.extractedOrderId,
+                    actor = "operator",
+                    details = "Manual transcript saved to Room DB: '${state.transcriptText.take(40)}...'"
+                )
+                delay(3000)
+                _uiState.value = _uiState.value.copy(historySaveMessage = null)
+            } catch (e: Exception) {
+                val msg = if (state.language == AppLanguage.AR) "تعذر الحفظ: ${e.message}" else "Save failed: ${e.message}"
+                _uiState.value = _uiState.value.copy(historySaveMessage = msg)
+            }
+        }
+    }
+
+    fun deleteSavedTranscript(id: Long) {
+        viewModelScope.launch {
+            historyRepository.deleteTranscript(id)
+            repository.logEvent(
+                eventType = "transcript.deleted_from_room",
+                orderId = null,
+                actor = "operator",
+                details = "Deleted transcript record #$id from Room DB"
+            )
+        }
+    }
+
+    fun clearAllHistory() {
+        viewModelScope.launch {
+            historyRepository.clearHistory()
+            repository.logEvent(
+                eventType = "history.cleared",
+                orderId = null,
+                actor = "operator",
+                details = "Cleared all local transcripts from Room database"
+            )
+        }
+    }
+
+    fun loadTranscriptIntoStudio(saved: SavedTranscript) {
+        val isAr = _uiState.value.language == AppLanguage.AR
+        _uiState.value = _uiState.value.copy(
+            transcriptText = saved.transcript,
+            confidence = saved.confidence,
+            currentTab = AppTab.STUDIO,
+            audioStatusMessage = if (isAr) "تم تحميل التفريغ من السجل: ${saved.formattedTime}" else "Loaded from Room History: ${saved.formattedTime}",
+            isApproved = false,
+            isRetrieved = false
+        )
+        analyzeCurrentTranscript(saved.transcript)
+        saved.extractedOrderId?.let { retrieveOrder(it) }
+        repository.logEvent(
+            eventType = "transcript.loaded_from_history",
+            orderId = saved.extractedOrderId,
+            actor = "operator",
+            details = "Loaded saved transcript #${saved.id} into Studio"
+        )
+    }
+
+    companion object {
+        fun provideFactory(application: Application): ViewModelProvider.Factory =
+            object : ViewModelProvider.Factory {
+                @Suppress("UNCHECKED_CAST")
+                override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                    return SawtFlowViewModel(application) as T
+                }
+            }
     }
 }

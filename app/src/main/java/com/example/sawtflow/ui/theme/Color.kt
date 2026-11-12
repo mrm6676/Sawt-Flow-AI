@@ -18,6 +18,10 @@ val GreenSuccessBg = Color(0xFFDCF3DF)
 val RedCancel = Color(0xFFBA1A1A)
 val RedCancelBg = Color(0xFFF9E5DF)
 
+val CoralAccent = Color(0xFFFF5252)
+val EmeraldAccent = Color(0xFF00E676)
+val NavyBorder = Color(0xFF1E3A6E)
+
 val CreamBg = Color(0xFFF6F4ED)
 val CreamSurface = Color(0xFFFFFFFF)
 val TextDark = Color(0xFF102245)

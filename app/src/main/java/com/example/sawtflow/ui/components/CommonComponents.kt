@@ -7,8 +7,11 @@ import androidx.compose.animation.core.infiniteRepeatable
 import androidx.compose.animation.core.rememberInfiniteTransition
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.ui.res.painterResource
+import com.example.sawtflow.R
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -64,22 +67,14 @@ fun SawtFlowHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // SawtFlow Brand Orb with Glowing Cyan Ring
-            Box(
+            // SawtFlow Brand Logo
+            Image(
+                painter = painterResource(id = R.drawable.ic_sawtflow_brand_logo),
+                contentDescription = "SawtFlow Brand Logo",
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
-                    .background(NavyCard)
-                    .border(1.5.dp, CyanAccent, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "ع",
-                    color = CyanAccent,
-                    fontSize = 18.sp,
-                    fontWeight = FontWeight.Bold
-                )
-            }
+            )
 
             Row {
                 Text(

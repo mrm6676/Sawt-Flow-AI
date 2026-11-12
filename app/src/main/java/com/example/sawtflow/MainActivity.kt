@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Assessment
 import androidx.compose.material.icons.filled.Dataset
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Mic
 import androidx.compose.material3.Icon
@@ -32,6 +33,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.sawtflow.data.model.AppLanguage
 import com.example.sawtflow.ui.components.SawtFlowHeader
 import com.example.sawtflow.ui.screens.AuditScreen
+import com.example.sawtflow.ui.screens.HistoryScreen
 import com.example.sawtflow.ui.screens.OrdersScreen
 import com.example.sawtflow.ui.screens.OverviewScreen
 import com.example.sawtflow.ui.screens.StudioScreen
@@ -42,14 +44,18 @@ import com.example.sawtflow.ui.theme.NavyPrimary
 import com.example.sawtflow.ui.theme.SawtFlowTheme
 import com.example.sawtflow.ui.viewmodel.AppTab
 import com.example.sawtflow.ui.viewmodel.SawtFlowViewModel
+import com.example.sawtflow.util.configureAppCheck
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        configureAppCheck(this, intent)
         enableEdgeToEdge()
         setContent {
             SawtFlowTheme(darkTheme = true) {
-                val viewModel: SawtFlowViewModel = viewModel()
+                val viewModel: SawtFlowViewModel = viewModel(
+                    factory = SawtFlowViewModel.provideFactory(application)
+                )
                 SawtFlowApp(viewModel = viewModel)
             }
         }
@@ -84,6 +90,7 @@ fun SawtFlowApp(viewModel: SawtFlowViewModel) {
                 ) {
                     val items = listOf(
                         Triple(AppTab.STUDIO, if (isAr) "الاستوديو" else "Studio", Icons.Default.Mic),
+                        Triple(AppTab.HISTORY, if (isAr) "السجل" else "History", Icons.Default.History),
                         Triple(AppTab.ORDERS, if (isAr) "الطلبات" else "Orders", Icons.Default.Dataset),
                         Triple(AppTab.AUDIT, if (isAr) "التدقيق" else "Audit Log", Icons.Default.Assessment),
                         Triple(AppTab.OVERVIEW, if (isAr) "نظرة عامة" else "Overview", Icons.Default.Info)
@@ -116,6 +123,7 @@ fun SawtFlowApp(viewModel: SawtFlowViewModel) {
             ) {
                 when (state.currentTab) {
                     AppTab.STUDIO -> StudioScreen(state = state, viewModel = viewModel)
+                    AppTab.HISTORY -> HistoryScreen(viewModel = viewModel, language = state.language)
                     AppTab.ORDERS -> OrdersScreen(viewModel = viewModel, language = state.language)
                     AppTab.AUDIT -> AuditScreen(viewModel = viewModel, language = state.language)
                     AppTab.OVERVIEW -> OverviewScreen(state = state, viewModel = viewModel)
