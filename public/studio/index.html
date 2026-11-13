@@ -85,6 +85,15 @@
               <span id="uploadedFileName">recording.wav</span>
               <span class="mono" id="uploadedFileSize">0 KB</span>
             </div>
+            <div class="waveform-visualizer" id="audioWaveform" aria-hidden="true">
+              <div class="waveform-bars">
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+                <span></span><span></span><span></span><span></span>
+              </div>
+              <span class="waveform-label mono" data-ar="جارٍ التشغيل" data-en="PLAYING">جارٍ التشغيل</span>
+            </div>
             <audio id="audioPreview" controls></audio>
             <div class="btn-row">
               <button class="btn btn-green" id="approveAudioBtn" type="button" data-ar="✓ اعتماد التسجيل الصوتي" data-en="✓ Approve Voice Recording">

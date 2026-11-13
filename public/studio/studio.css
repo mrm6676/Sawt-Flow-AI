@@ -295,6 +295,108 @@ body {
   font-size: 0.88rem;
 }
 
+.waveform-visualizer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  max-height: 0;
+  opacity: 0;
+  overflow: hidden;
+  padding: 0 0.75rem;
+  border-radius: 10px;
+  background: rgba(7, 20, 45, 0.7);
+  border: 1px solid transparent;
+  transition: max-height 0.25s ease, opacity 0.25s ease, padding 0.25s ease, border-color 0.25s ease;
+}
+
+.audio-player-box.is-playing .waveform-visualizer {
+  max-height: 52px;
+  opacity: 1;
+  padding: 0.5rem 0.75rem;
+  border-color: rgba(56, 216, 255, 0.35);
+}
+
+.waveform-bars {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  height: 28px;
+  flex: 1;
+}
+
+.waveform-bars span {
+  display: block;
+  flex: 1;
+  max-width: 6px;
+  height: 6px;
+  border-radius: 999px;
+  background: linear-gradient(180deg, var(--cyan), rgba(56, 216, 255, 0.45));
+  transform-origin: center;
+  animation: waveBarPulse 0.9s ease-in-out infinite alternate;
+  animation-play-state: paused;
+}
+
+.audio-player-box.is-playing .waveform-bars span {
+  animation-play-state: running;
+}
+
+.waveform-bars span:nth-child(2n) {
+  background: linear-gradient(180deg, var(--amber), rgba(255, 177, 68, 0.45));
+  animation-duration: 0.72s;
+}
+
+.waveform-bars span:nth-child(3n) {
+  animation-duration: 1.05s;
+}
+
+.waveform-bars span:nth-child(1) { animation-delay: 0.05s; }
+.waveform-bars span:nth-child(2) { animation-delay: 0.20s; }
+.waveform-bars span:nth-child(3) { animation-delay: 0.35s; }
+.waveform-bars span:nth-child(4) { animation-delay: 0.12s; }
+.waveform-bars span:nth-child(5) { animation-delay: 0.42s; }
+.waveform-bars span:nth-child(6) { animation-delay: 0.25s; }
+.waveform-bars span:nth-child(7) { animation-delay: 0.08s; }
+.waveform-bars span:nth-child(8) { animation-delay: 0.30s; }
+.waveform-bars span:nth-child(9) { animation-delay: 0.18s; }
+.waveform-bars span:nth-child(10) { animation-delay: 0.45s; }
+.waveform-bars span:nth-child(11) { animation-delay: 0.22s; }
+.waveform-bars span:nth-child(12) { animation-delay: 0.10s; }
+.waveform-bars span:nth-child(13) { animation-delay: 0.38s; }
+.waveform-bars span:nth-child(14) { animation-delay: 0.16s; }
+.waveform-bars span:nth-child(15) { animation-delay: 0.28s; }
+.waveform-bars span:nth-child(16) { animation-delay: 0.06s; }
+
+@keyframes waveBarPulse {
+  0% {
+    height: 6px;
+    opacity: 0.55;
+  }
+  50% {
+    height: 20px;
+    opacity: 0.9;
+  }
+  100% {
+    height: 28px;
+    opacity: 1;
+  }
+}
+
+.waveform-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  color: var(--cyan);
+  letter-spacing: 0.06em;
+  white-space: nowrap;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .waveform-bars span {
+    animation: none;
+    height: 16px;
+  }
+}
+
 audio {
   width: 100%;
   height: 38px;

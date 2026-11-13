@@ -165,7 +165,9 @@ function handleAudioFile(file) {
   const sizeKB = Math.max(1, Math.round(file.size / 1024));
   document.getElementById('uploadedFileName').textContent = file.name;
   document.getElementById('uploadedFileSize').textContent = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
-  document.getElementById('audioPlayerBox').classList.add('show');
+  const playerBox = document.getElementById('audioPlayerBox');
+  playerBox.classList.add('show');
+  playerBox.classList.remove('is-playing');
   document.getElementById('audioPreview').src = URL.createObjectURL(file);
   document.getElementById('audioStatusPill').textContent = state.lang === 'ar' ? 'تم تحميل الملف ✓' : 'AUDIO READY ✓';
   document.getElementById('audioStatusPill').className = 'status-pill';
@@ -266,6 +268,18 @@ function initActions() {
       statusPill.className = 'status-pill green';
       logEvent('audio.recording_approved', state.extractedOrderId, 'human.operator', `Approved uploaded voice recording: ${state.uploadedFileName}`);
     });
+  }
+
+  const audioPreview = document.getElementById('audioPreview');
+  const audioPlayerBox = document.getElementById('audioPlayerBox');
+  if (audioPreview && audioPlayerBox) {
+    const setPlaying = (playing) => {
+      audioPlayerBox.classList.toggle('is-playing', playing);
+    };
+    audioPreview.addEventListener('play', () => setPlaying(true));
+    audioPreview.addEventListener('pause', () => setPlaying(false));
+    audioPreview.addEventListener('ended', () => setPlaying(false));
+    audioPreview.addEventListener('emptied', () => setPlaying(false));
   }
 
   document.getElementById('historySearchInput').addEventListener('input', renderHistory);
