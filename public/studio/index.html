@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>SawtFlow Studio | Arabic Voice Intelligence Workspace</title>
+  <meta name="description" content="SawtFlow Studio: مساحة عمل تفاعلية لتحويل التسجيلات الصوتية العربية إلى قرارات وإجراءات تجارية موثوقة." />
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/studio/studio.css" />
+</head>
+<body>
+  <header class="studio-header">
+    <a href="/" class="brand" aria-label="SawtFlow Home">
+      <div class="brand-logo">
+        <svg width="22" height="22" viewBox="0 0 40 40" fill="none">
+          <circle cx="20" cy="20" r="18" stroke="#38D8FF" stroke-width="2" />
+          <path d="M9 22C12 19 14 14 17 16C20 18 19 26 23 25C26 24 28 15 31 16" stroke="#38D8FF" stroke-width="3" stroke-linecap="round" />
+          <circle cx="31" cy="16" r="3" fill="#FFB144" />
+          <path d="M24 29L28 33L35 25" stroke="#FFB144" stroke-width="2.5" stroke-linecap="round" />
+        </svg>
+      </div>
+      <div class="brand-title">Sawt<span>Flow</span> Studio</div>
+    </a>
+
+    <div class="header-controls">
+      <nav class="tab-bar" aria-label="Studio Navigation">
+        <button class="tab-btn active" data-tab="studio" data-ar="الاستوديو" data-en="Studio">الاستوديو</button>
+        <button class="tab-btn" data-tab="history" data-ar="السجل" data-en="History">السجل</button>
+        <button class="tab-btn" data-tab="orders" data-ar="الطلبات" data-en="Orders">الطلبات</button>
+        <button class="tab-btn" data-tab="audit" data-ar="التدقيق" data-en="Audit Log">التدقيق</button>
+      </nav>
+      <button class="lang-btn" id="langToggleBtn" type="button">EN</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <div class="studio-hero">
+      <div class="eyebrow" data-ar="استوديو SAWTFLOW / مساحة الذكاء الصوتي" data-en="SAWTFLOW STUDIO / VOICE INTELLIGENCE WORKSPACE">
+        استوديو SAWTFLOW / مساحة الذكاء الصوتي
+      </div>
+      <h1 data-ar="حوّل الصوت العربي إلى الإجراء الموثوق التالي." data-en="Turn Arabic voice into the next right action.">
+        حوّل الصوت العربي إلى الإجراء الموثوق التالي.
+      </h1>
+      <p data-ar="ارفع تسجيلاً صوتياً أو اختر لهجة عامية، صحّح النص، وحوّل نية العميل إلى رد معتمد وموثق." data-en="Upload or record a voice conversation, refine speech recognition, and turn customer intent into an approved business action.">
+        ارفع تسجيلاً صوتياً أو اختر لهجة عامية، صحّح النص، وحوّل نية العميل إلى رد معتمد وموثق.
+      </p>
+    </div>
+
+    <!-- STUDIO PANEL -->
+    <section class="panel active" id="panel-studio">
+      <div class="step-stack">
+
+        <!-- STEP 1: INPUT -->
+        <article class="step-card">
+          <div class="step-top">
+            <span class="step-index" data-ar="01 / إدخال الصوت" data-en="01 / INPUT">01 / إدخال الصوت</span>
+            <span class="status-pill" id="audioStatusPill">جاهز</span>
+          </div>
+          <h2 data-ar="ابدأ بصوت حقيقي" data-en="Start with a real voice">ابدأ بصوت حقيقي</h2>
+          <p class="step-desc" data-ar="اختر لهجة عامية عربية أو ارفع ملفاً صوتياً أو سجّل مباشرة من الميكروفون." data-en="Select a colloquial Arabic dialect, upload an audio file, or record directly from your microphone.">
+            اختر لهجة عامية عربية أو ارفع ملفاً صوتياً أو سجّل مباشرة من الميكروفون.
+          </p>
+
+          <div class="chip-row" id="dialectChips">
+            <button class="chip selected" data-dialect="gulf" data-ar="خليجي / سعودي" data-en="Gulf / Saudi">خليجي / سعودي</button>
+            <button class="chip" data-dialect="egyptian" data-ar="مصري" data-en="Egyptian">مصري</button>
+            <button class="chip" data-dialect="levantine" data-ar="شامي" data-en="Levantine">شامي</button>
+            <button class="chip" data-dialect="maghrebi" data-ar="مغاربي" data-en="Maghrebi">مغاربي</button>
+          </div>
+
+          <div class="dropzone" id="dropzone">
+            <input type="file" id="audioFileInput" accept="audio/*" hidden />
+            <strong data-ar="اسحب ملف صوتي وأفلته هنا أو انقر للرفع" data-en="Drag & drop an audio recording here or click to upload">
+              اسحب ملف صوتي وأفلته هنا أو انقر للرفع
+            </strong>
+            <small data-ar="يدعم WAV, MP3, M4A, WEBM, OGG" data-en="Supports WAV, MP3, M4A, WEBM, OGG">
+              يدعم WAV, MP3, M4A, WEBM, OGG
+            </small>
+          </div>
+
+          <div class="audio-player-box" id="audioPlayerBox">
+            <div class="audio-player-meta">
+              <span id="uploadedFileName">recording.wav</span>
+              <span class="mono" id="uploadedFileSize">0 KB</span>
+            </div>
+            <audio id="audioPreview" controls></audio>
+          </div>
+
+          <div class="btn-row">
+            <button class="btn btn-amber" id="recordBtn" type="button" data-ar="🎙️ تسجيل صوتي" data-en="🎙️ Record Voice">
+              🎙️ تسجيل صوتي
+            </button>
+            <button class="btn btn-outline" id="loadSampleBtn" type="button" data-ar="تحميل عينة طلب SF-4420" data-en="Load SF-4420 Sample">
+              تحميل عينة طلب SF-4420
+            </button>
+          </div>
+        </article>
+
+        <!-- STEP 2: UNDERSTAND -->
+        <article class="step-card">
+          <div class="step-top">
+            <span class="step-index" data-ar="02 / الفهم والتفريغ" data-en="02 / UNDERSTAND">02 / الفهم والتفريغ</span>
+            <span class="status-pill" id="confidencePill">97.8% CONFIDENCE</span>
+          </div>
+          <h2 data-ar="صحّح المعنى دون تغيير المتحدث" data-en="Resolve the meaning, not the speaker">صحّح المعنى دون تغيير المتحدث</h2>
+          <p class="step-desc" data-ar="راجع نص المحادثة المفرّغ، عدّله عند الحاجة، واحفظه في السجل المحلي." data-en="Review the transcribed conversation, edit if needed, and save it to your local history.">
+            راجع نص المحادثة المفرّغ، عدّله عند الحاجة، واحفظه في السجل المحلي.
+          </p>
+
+          <textarea id="transcriptInput" class="textarea" rows="3"></textarea>
+
+          <div class="btn-row">
+            <button class="btn btn-cyan" id="analyzeBtn" type="button" data-ar="تحليل النية واستخراج الطلب ←" data-en="Analyze Intent & Extract Order →">
+              تحليل النية واستخراج الطلب ←
+            </button>
+            <button class="btn btn-outline" id="saveHistoryBtn" type="button" data-ar="💾 حفظ في السجل" data-en="💾 Save to History">
+              💾 حفظ في السجل
+            </button>
+          </div>
+          <div class="toast-banner" id="historySavedBanner" data-ar="✓ تم حفظ التفريغ في السجل المحلي بنجاح" data-en="✓ Transcript saved to local history">
+            ✓ تم حفظ التفريغ في السجل المحلي بنجاح
+          </div>
+        </article>
+
+        <!-- STEP 3: INTENT -->
+        <article class="step-card">
+          <div class="step-top">
+            <span class="step-index" data-ar="03 / ذكاء النية" data-en="03 / INTENT INTELLIGENCE">03 / ذكاء النية</span>
+            <span class="status-pill" id="intentStatusPill">DETECTED</span>
+          </div>
+          <h2 data-ar="ما الذي يحتاجه العميل" data-en="What the customer needs">ما الذي يحتاجه العميل</h2>
+          <div class="metrics-grid">
+            <div class="metric-box">
+              <div class="metric-label" data-ar="النية المكتشفة" data-en="DETECTED INTENT">النية المكتشفة</div>
+              <div class="metric-val cyan" id="detectedIntentVal">حالة الطلب</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label" data-ar="رقم الطلب المستخرج" data-en="EXTRACTED ORDER">رقم الطلب المستخرج</div>
+              <div class="metric-val mono" id="extractedOrderVal">SF-1048</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label" data-ar="اللهجة / اللغة" data-en="DIALECT / LANGUAGE">اللهجة / اللغة</div>
+              <div class="metric-val" id="detectedDialectVal">خليجي / سعودي</div>
+            </div>
+            <div class="metric-box">
+              <div class="metric-label" data-ar="الأولوية" data-en="URGENCY">الأولوية</div>
+              <div class="metric-val" id="urgencyVal">Normal</div>
+            </div>
+          </div>
+        </article>
+
+        <!-- STEP 4: ACTION & EVIDENCE -->
+        <article class="step-card">
+          <div class="step-top">
+            <span class="step-index" data-ar="04 / الاسترجاع والتحقق" data-en="04 / ACTION & EVIDENCE">04 / الاسترجاع والتحقق</span>
+            <span class="status-pill" id="lookupStatusPill">VERIFIED LOOKUP</span>
+          </div>
+          <h2 data-ar="استرجاع الأدلة والبيانات" data-en="Retrieve operational evidence">استرجاع الأدلة والبيانات</h2>
+          <div class="lookup-row">
+            <input type="text" id="orderLookupInput" class="input mono" value="SF-1048" placeholder="SF-XXXX" />
+            <button class="btn btn-cyan" id="lookupBtn" type="button" data-ar="بحث عن الطلب" data-en="Lookup Order">بحث عن الطلب</button>
+          </div>
+          <div class="chip-row" id="quickOrderChips"></div>
+          <div class="evidence-box" id="orderEvidenceBox"></div>
+        </article>
+
+        <!-- STEP 5: HUMAN APPROVAL -->
+        <article class="step-card">
+          <div class="step-top">
+            <span class="step-index" data-ar="05 / بوابة الاعتماد البشري" data-en="05 / HUMAN APPROVAL GATE">05 / بوابة الاعتماد البشري</span>
+            <span class="status-pill amber" id="approvalPill">AWAITING APPROVAL</span>
+          </div>
+          <h2 data-ar="المراجعة والاعتماد النهائي" data-en="Review and approve response">المراجعة والاعتماد النهائي</h2>
+          <p class="step-desc" data-ar="لا يتم إرسال أي رد أو تنفيذ إجراء تشغيلي إلا بعد موافقة المشغّل." data-en="No customer response or state mutation is dispatched without explicit operator approval.">
+            لا يتم إرسال أي رد أو تنفيذ إجراء تشغيلي إلا بعد موافقة المشغّل.
+          </p>
+          <textarea id="draftResponseInput" class="textarea" rows="3"></textarea>
+          <button class="btn btn-green" id="approveBtn" type="button" data-ar="✓ اعتماد وإرسال الرد" data-en="✓ Approve & Dispatch">
+            ✓ اعتماد وإرسال الرد
+          </button>
+          <div class="toast-banner" id="approvedBanner" data-ar="✓ تم اعتماد الرد وتوثيقه في سجل التدقيق" data-en="✓ Response approved and recorded in immutable audit log">
+            ✓ تم اعتماد الرد وتوثيقه في سجل التدقيق
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- HISTORY PANEL -->
+    <section class="panel" id="panel-history">
+      <div class="step-top" style="margin-bottom: 1rem;">
+        <h2 data-ar="سجل التفريغات المحفوظة" data-en="Saved Transcript History">سجل التفريغات المحفوظة</h2>
+        <button class="btn btn-danger" id="clearHistoryBtn" type="button" data-ar="مسح السجل" data-en="Clear All">مسح السجل</button>
+      </div>
+      <input type="text" id="historySearchInput" class="input" placeholder="ابحث في السجل..." />
+      <div class="list-grid" id="historyList"></div>
+    </section>
+
+    <!-- ORDERS PANEL -->
+    <section class="panel" id="panel-orders">
+      <div class="step-top" style="margin-bottom: 1rem;">
+        <h2 data-ar="قاعدة بيانات الطلبات (11 سجل)" data-en="Operational Orders Database (11 Records)">قاعدة بيانات الطلبات (11 سجل)</h2>
+      </div>
+      <div class="list-grid" id="ordersList"></div>
+    </section>
+
+    <!-- AUDIT LOG PANEL -->
+    <section class="panel" id="panel-audit">
+      <div class="step-top" style="margin-bottom: 1rem;">
+        <h2 data-ar="سجل التدقيق غير القابل للتعديل" data-en="Immutable Audit Trail">سجل التدقيق غير القابل للتعديل</h2>
+      </div>
+      <div class="step-stack" id="auditList"></div>
+    </section>
+  </main>
+
+  <footer>
+    <p>© 2026 SawtFlow AI — Arabic Voice Intelligence Studio · <a href="/" style="color: #38D8FF; text-decoration: none;">العودة للرئيسية</a></p>
+  </footer>
+
+  <script src="/studio/studio.js"></script>
+</body>
+</html>
