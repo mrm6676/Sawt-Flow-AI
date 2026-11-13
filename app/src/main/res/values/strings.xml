@@ -82,12 +82,14 @@
     <string name="trust_title">Control stays explicit.</string>
     <string name="trust_desc">Your customer conversations carry context. SawtFlow protects it with a deliberate action layer: retrieve, check, confirm, then respond.</string>
     
-    <!-- Contact demo -->
-    <string name="demo_request_title">Request a conversation</string>
-    <string name="demo_request_lead">Tell us where Arabic customer conversations are slowing your business down.</string>
-    <string name="input_name">Your Name</string>
-    <string name="input_email">Work Email</string>
-    <string name="input_notes">What would you like to automate?</string>
-    <string name="btn_submit_demo">Submit Request</string>
-    <string name="demo_submitted_msg">Thank you! Your request has been recorded in the demonstration inquiry queue.</string>
+    <!-- Contact Us & Footer -->
+    <string name="contact_us_title">Contact Us</string>
+    <string name="contact_us_lead">Have a question about Arabic voice automation or integrations? Send us an email directly.</string>
+    <string name="input_contact_email">Your Email</string>
+    <string name="input_contact_subject">Subject</string>
+    <string name="input_contact_message">Your Message</string>
+    <string name="btn_send_email">Send Email</string>
+    <string name="contact_submitted_msg">Thank you! Your message has been sent and logged.</string>
+    <string name="footer_connect">Connect with SawtFlow</string>
+    <string name="footer_copyright">© 2026 SawtFlow AI · Arabic Voice Intelligence</string>
 </resources>

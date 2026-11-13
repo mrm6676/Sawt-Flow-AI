@@ -1,0 +1,13 @@
+.gradle/
+.kotlin/
+.build-outputs/
+app/
+gradle/
+*.kts
+*.properties
+*.keystore
+*.base64
+metadata.json
+CONTRIBUTING.md
+LICENSE
+README.md

@@ -64,11 +64,11 @@ data class StudioUiState(
     val isApproved: Boolean = false,
     val isRetrieved: Boolean = false,
     
-    // Demo Inquiry
-    val demoName: String = "",
-    val demoEmail: String = "",
-    val demoNotes: String = "",
-    val isDemoSubmitted: Boolean = false,
+    // Contact Us Email Form
+    val contactEmail: String = "",
+    val contactSubject: String = "",
+    val contactMessage: String = "",
+    val isContactSubmitted: Boolean = false,
 
     // Uploaded audio file state
     val uploadedAudioName: String? = null,
@@ -350,21 +350,23 @@ class SawtFlowViewModel(
         )
     }
 
-    fun updateDemoForm(name: String, email: String, notes: String) {
+    fun updateContactForm(email: String, subject: String, message: String) {
         _uiState.value = _uiState.value.copy(
-            demoName = name,
-            demoEmail = email,
-            demoNotes = notes
+            contactEmail = email,
+            contactSubject = subject,
+            contactMessage = message,
+            isContactSubmitted = false
         )
     }
 
-    fun submitDemoRequest() {
-        _uiState.value = _uiState.value.copy(isDemoSubmitted = true)
+    fun submitContactMessage() {
+        val state = _uiState.value
+        _uiState.value = state.copy(isContactSubmitted = true)
         repository.logEvent(
-            eventType = "demo.requested",
+            eventType = "contact.email_submitted",
             orderId = null,
             actor = "guest",
-            details = "Inquiry registered for: ${_uiState.value.demoName} (${_uiState.value.demoEmail})"
+            details = "Contact message sent from ${state.contactEmail} — Subject: ${state.contactSubject.ifBlank { "General Inquiry" }}"
         )
     }
 
