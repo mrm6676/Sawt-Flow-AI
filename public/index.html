@@ -76,6 +76,22 @@
       font-weight: 600;
       border: 1px solid rgba(56, 216, 255, 0.3);
     }
+    .lang-btn {
+      background: var(--navy-card);
+      color: var(--cyan);
+      border: 1px solid rgba(56, 216, 255, 0.45);
+      border-radius: 999px;
+      padding: 0.45rem 1rem;
+      font-family: inherit;
+      font-weight: 700;
+      font-size: 0.85rem;
+      cursor: pointer;
+      transition: all 0.2s ease;
+    }
+    .lang-btn:hover {
+      background: rgba(56, 216, 255, 0.14);
+      border-color: var(--cyan);
+    }
     .hero {
       flex: 1;
       max-width: 1000px;
@@ -247,7 +263,7 @@
       grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
       gap: 1.5rem;
       width: 100%;
-      text-align: right;
+      text-align: start;
       margin-top: 2rem;
     }
     .card {
@@ -298,7 +314,7 @@
       border: 1px solid var(--navy-border);
       border-radius: 16px;
       padding: 2rem;
-      text-align: right;
+      text-align: start;
     }
     .contact-section h2 {
       font-size: 1.5rem;
@@ -413,10 +429,11 @@
       </div>
       <div class="brand-title">Sawt<span>Flow</span></div>
     </a>
-    <div style="display: flex; align-items: center; gap: 0.75rem;">
-      <a href="/studio/" class="btn btn-primary" style="padding: 0.45rem 1rem; font-size: 0.88rem;">
+    <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
+      <a href="/studio/" class="btn btn-primary" style="padding: 0.45rem 1rem; font-size: 0.88rem;" data-ar="افتح الاستوديو ←" data-en="Open Studio →">
         افتح الاستوديو ←
       </a>
+      <button class="lang-btn" id="langToggleBtn" type="button" aria-label="Switch language to English">EN</button>
       <div class="badge-tag">Android & Web Ready · Vercel Hosted</div>
     </div>
   </header>
@@ -425,8 +442,8 @@
     <div class="hero-eyebrow">
       <span class="pulse-dot"></span> ARABIC VOICE INTELLIGENCE
     </div>
-    <h1>الصوت العربي الذي يدير <em>أعمالك بدقة.</em></h1>
-    <p class="hero-lead">
+    <h1 id="heroHeadline" data-ar-html="الصوت العربي الذي يدير <em>أعمالك بدقة.</em>" data-en-html="The Arabic voice that runs <em>your business reliably.</em>">الصوت العربي الذي يدير <em>أعمالك بدقة.</em></h1>
+    <p class="hero-lead" data-ar="SawtFlow يفهم اللهجات العربية العامية، ويحوّل المحادثات الصوتية المعقدة إلى تفريغ صوتي دقيق، وتحليل فوري للنية، وإجراءات تشغيلية معتمدة عبر Gemini 3.8 Flash وقاعدة بيانات Room." data-en="SawtFlow understands colloquial Arabic dialects and transforms complex voice conversations into accurate speech transcripts, instant intent analysis, and approved operational actions powered by Gemini 3.8 Flash and local Room storage.">
       SawtFlow يفهم اللهجات العربية العامية، ويحوّل المحادثات الصوتية المعقدة إلى تفريغ صوتي دقيق، وتحليل فوري للنية، وإجراءات تشغيلية معتمدة عبر Gemini 3.8 Flash وقاعدة بيانات Room.
     </p>
 
@@ -439,19 +456,19 @@
     </div>
 
     <div class="cta-group">
-      <a href="/studio/" class="btn btn-primary">
+      <a href="/studio/" class="btn btn-primary" data-ar="تشغيل استوديو SawtFlow ←" data-en="Launch SawtFlow Studio →">
         تشغيل استوديو SawtFlow ←
       </a>
-      <a href="#features" class="btn btn-secondary">
+      <a href="#features" class="btn btn-secondary" data-ar="استكشف المزايا والقدرات ↓" data-en="Explore Features ↓">
         استكشف المزايا والقدرات ↓
       </a>
-      <a href="https://github.com/mrm6676/SawtFlow" target="_blank" class="btn btn-secondary">
+      <a href="https://github.com/mrm6676/SawtFlow" target="_blank" rel="noopener noreferrer" class="btn btn-secondary" data-ar="مستودع GitHub ↗" data-en="GitHub Repository ↗">
         مستودع GitHub ↗
       </a>
     </div>
 
-    <a href="#features" class="scroll-down-btn" id="scrollDownBtn" aria-label="مرر للأسفل لاستعراض المزايا">
-      <span class="scroll-label">مرر للأسفل</span>
+    <a href="#features" class="scroll-down-btn" id="scrollDownBtn" aria-label="مرر للأسفل لاستعراض المزايا" data-ar-aria="مرر للأسفل لاستعراض المزايا" data-en-aria="Scroll down to explore features">
+      <span class="scroll-label" data-ar="مرر للأسفل" data-en="Scroll Down">مرر للأسفل</span>
       <div class="scroll-indicator">
         <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#38D8FF" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
           <polyline points="6 9 12 15 18 9"></polyline>
@@ -462,36 +479,36 @@
     <div class="features-grid" id="features">
       <div class="card">
         <div class="card-icon">🎙️</div>
-        <h3>فهم اللهجات العامية</h3>
-        <p>التعرف التلقائي على لهجات الخليج، مصر، الشام، والمغرب العربي دون فرض نصوص جامدة على العملاء.</p>
+        <h3 data-ar="فهم اللهجات العامية" data-en="Colloquial Dialect Understanding">فهم اللهجات العامية</h3>
+        <p data-ar="التعرف التلقائي على لهجات الخليج، مصر، الشام، والمغرب العربي دون فرض نصوص جامدة على العملاء." data-en="Automatic recognition across Gulf, Egyptian, Levantine, and Maghrebi dialects without forcing customers into rigid scripts.">التعرف التلقائي على لهجات الخليج، مصر، الشام، والمغرب العربي دون فرض نصوص جامدة على العملاء.</p>
       </div>
       <div class="card">
         <div class="card-icon">⚡</div>
-        <h3>تفريغ صوتي بـ Gemini API</h3>
-        <p>تحويل فوري للتسجيلات الصوتية إلى نصوص دقيقة عبر نموذج الذكاء الاصطناعي السحابي Gemini 3.8 Flash.</p>
+        <h3 data-ar="تفريغ صوتي بـ Gemini API" data-en="Gemini API Speech Transcription">تفريغ صوتي بـ Gemini API</h3>
+        <p data-ar="تحويل فوري للتسجيلات الصوتية إلى نصوص دقيقة عبر نموذج الذكاء الاصطناعي السحابي Gemini 3.8 Flash." data-en="Instant conversion of voice recordings into accurate transcripts powered by Gemini 3.8 Flash cloud AI.">تحويل فوري للتسجيلات الصوتية إلى نصوص دقيقة عبر نموذج الذكاء الاصطناعي السحابي Gemini 3.8 Flash.</p>
       </div>
       <div class="card">
         <div class="card-icon">💾</div>
-        <h3>قاعدة بيانات Room المحلية</h3>
-        <p>حفظ ومزامنة سجلات المحادثات محلياً على الجهاز مع إمكانية البحث، الفلترة حسب اللهجة، والاسترجاع السريع.</p>
+        <h3 data-ar="قاعدة بيانات Room المحلية" data-en="Local Room Database Storage">قاعدة بيانات Room المحلية</h3>
+        <p data-ar="حفظ ومزامنة سجلات المحادثات محلياً على الجهاز مع إمكانية البحث، الفلترة حسب اللهجة، والاسترجاع السريع." data-en="Save and manage conversation records locally on device with instant search, dialect filtering, and fast retrieval.">حفظ ومزامنة سجلات المحادثات محلياً على الجهاز مع إمكانية البحث، الفلترة حسب اللهجة، والاسترجاع السريع.</p>
       </div>
       <div class="card">
         <div class="card-icon">🛡️</div>
-        <h3>اعتماد بشري ورقابة صارمة</h3>
-        <p>صياغة الردود التشغيلية تلقائياً مع بوابة اعتماد بشرية وسجل تدقيق غير قابل للتعديل يوثق كافة الإجراءات.</p>
+        <h3 data-ar="اعتماد بشري ورقابة صارمة" data-en="Human-in-the-Loop Approval">اعتماد بشري ورقابة صارمة</h3>
+        <p data-ar="صياغة الردود التشغيلية تلقائياً مع بوابة اعتماد بشرية وسجل تدقيق غير قابل للتعديل يوثق كافة الإجراءات." data-en="Automatically drafts operational responses gated behind human operator approval and an immutable audit log.">صياغة الردود التشغيلية تلقائياً مع بوابة اعتماد بشرية وسجل تدقيق غير قابل للتعديل يوثق كافة الإجراءات.</p>
       </div>
     </div>
     <section class="contact-section" id="contact">
-      <h2>تواصل معنا · Contact Us</h2>
-      <p class="contact-sub">هل لديك استفسار حول أتمتة الصوت العربي أو التكامل مع أنظمتك؟ أرسل لنا رسالة مباشرة عبر البريد الإلكتروني.</p>
+      <h2 data-ar="تواصل معنا" data-en="Contact Us">تواصل معنا</h2>
+      <p class="contact-sub" data-ar="هل لديك استفسار حول أتمتة الصوت العربي أو التكامل مع أنظمتك؟ أرسل لنا رسالة مباشرة عبر البريد الإلكتروني." data-en="Have questions about Arabic voice automation or integrating with your systems? Send us a direct email message.">هل لديك استفسار حول أتمتة الصوت العربي أو التكامل مع أنظمتك؟ أرسل لنا رسالة مباشرة عبر البريد الإلكتروني.</p>
       <form class="contact-form" id="contactForm">
         <div class="contact-row">
-          <input type="email" id="contactEmail" class="contact-input" placeholder="البريد الإلكتروني (name@company.com)" required />
-          <input type="text" id="contactSubject" class="contact-input" placeholder="الموضوع (مثال: تكامل API)" required />
+          <input type="email" id="contactEmail" class="contact-input" placeholder="البريد الإلكتروني (name@company.com)" data-ar-placeholder="البريد الإلكتروني (name@company.com)" data-en-placeholder="Email address (name@company.com)" required />
+          <input type="text" id="contactSubject" class="contact-input" placeholder="الموضوع (مثال: تكامل API)" data-ar-placeholder="الموضوع (مثال: تكامل API)" data-en-placeholder="Subject (e.g. API Integration)" required />
         </div>
-        <textarea id="contactMessage" class="contact-textarea" rows="3" placeholder="اكتب رسالتك هنا..." required></textarea>
-        <button type="submit" class="btn btn-primary contact-submit">إرسال رسالة بريد إلكتروني ←</button>
-        <div class="contact-feedback" id="contactFeedback">
+        <textarea id="contactMessage" class="contact-textarea" rows="3" placeholder="اكتب رسالتك هنا..." data-ar-placeholder="اكتب رسالتك هنا..." data-en-placeholder="Write your message here..." required></textarea>
+        <button type="submit" class="btn btn-primary contact-submit" data-ar="إرسال رسالة بريد إلكتروني ←" data-en="Send Email Message →">إرسال رسالة بريد إلكتروني ←</button>
+        <div class="contact-feedback" id="contactFeedback" data-ar="✓ تم تجهيز رسالتك! يمكنك المتابعة عبر تطبيق البريد الإلكتروني أو انتظار رد فريق SawtFlow." data-en="✓ Your message is ready! Continue in your email client or wait for a reply from the SawtFlow team.">
           ✓ تم تجهيز رسالتك! يمكنك المتابعة عبر تطبيق البريد الإلكتروني أو انتظار رد فريق SawtFlow.
         </div>
       </form>
@@ -500,7 +517,7 @@
 
   <footer>
     <div class="footer-inner">
-      <div class="social-links" aria-label="روابط التواصل الاجتماعي">
+      <div class="social-links" aria-label="روابط التواصل الاجتماعي" data-ar-aria="روابط التواصل الاجتماعي" data-en-aria="Social media links">
         <a href="https://github.com/mrm6676/SawtFlow" target="_blank" rel="noopener noreferrer" class="social-link">
           <svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M12 0C5.37 0 0 5.37 0 12c0 5.31 3.435 9.795 8.205 11.385.6.105.825-.255.825-.57 0-.285-.015-1.23-.015-2.235-3.015.555-3.795-.735-4.035-1.41-.135-.345-.72-1.41-1.23-1.695-.42-.225-1.02-.78-.015-.795.945-.015 1.62.87 1.845 1.23 1.08 1.815 2.805 1.305 3.495.99.105-.78.42-1.305.765-1.605-2.67-.3-5.46-1.335-5.46-5.925 0-1.305.465-2.385 1.23-3.225-.12-.3-.54-1.53.12-3.18 0 0 1.005-.315 3.3 1.23.96-.27 1.98-.405 3-.405s2.04.135 3 .405c2.295-1.56 3.3-1.23 3.3-1.23.66 1.65.24 2.88.12 3.18.765.84 1.23 1.905 1.23 3.225 0 4.605-2.805 5.625-5.475 5.925.435.375.81 1.095.81 2.22 0 1.605-.015 2.895-.015 3.3 0 .315.225.69.825.57A12.02 12.02 0 0 0 24 12c0-6.63-5.37-12-12-12z"/></svg>
           <span>GitHub</span>
@@ -656,6 +673,53 @@
           window.addEventListener('resize', resizeStream);
         }
         requestAnimationFrame(drawStream);
+      }
+
+      let currentLang = 'ar';
+      const langToggleBtn = document.getElementById('langToggleBtn');
+
+      const applyLanguage = (lang) => {
+        currentLang = lang;
+        document.documentElement.lang = lang;
+        document.documentElement.dir = lang === 'ar' ? 'rtl' : 'ltr';
+
+        if (langToggleBtn) {
+          langToggleBtn.textContent = lang === 'ar' ? 'EN' : 'عربي';
+          langToggleBtn.setAttribute('aria-label', lang === 'ar' ? 'Switch language to English' : 'التبديل إلى اللغة العربية');
+        }
+
+        document.querySelectorAll('[data-ar][data-en]').forEach((el) => {
+          el.textContent = lang === 'ar' ? el.dataset.ar : el.dataset.en;
+        });
+
+        document.querySelectorAll('[data-ar-html][data-en-html]').forEach((el) => {
+          el.innerHTML = lang === 'ar' ? el.dataset.arHtml : el.dataset.enHtml;
+        });
+
+        document.querySelectorAll('[data-ar-placeholder][data-en-placeholder]').forEach((el) => {
+          el.placeholder = lang === 'ar' ? el.dataset.arPlaceholder : el.dataset.enPlaceholder;
+        });
+
+        document.querySelectorAll('[data-ar-aria][data-en-aria]').forEach((el) => {
+          el.setAttribute('aria-label', lang === 'ar' ? el.dataset.arAria : el.dataset.enAria);
+        });
+      };
+
+      try {
+        const savedLang = localStorage.getItem('sawtflow_lang');
+        if (savedLang === 'en' || savedLang === 'ar') {
+          applyLanguage(savedLang);
+        }
+      } catch (e) {}
+
+      if (langToggleBtn) {
+        langToggleBtn.addEventListener('click', () => {
+          const next = currentLang === 'ar' ? 'en' : 'ar';
+          applyLanguage(next);
+          try {
+            localStorage.setItem('sawtflow_lang', next);
+          } catch (e) {}
+        });
       }
     });
   </script>

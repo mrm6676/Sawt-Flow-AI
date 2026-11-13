@@ -689,6 +689,71 @@ audio {
   gap: 1rem;
 }
 
+.batch-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.9rem;
+  background: var(--navy-surface);
+  border: 1px solid var(--navy-border);
+  border-radius: 14px;
+  padding: 0.9rem 1.15rem;
+  margin-bottom: 1rem;
+}
+
+.select-all-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.65rem;
+  font-weight: 700;
+  font-size: 0.92rem;
+  cursor: pointer;
+}
+
+.batch-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.65rem;
+}
+
+.select-input {
+  background: var(--navy-card);
+  color: #fff;
+  border: 1px solid var(--navy-border);
+  border-radius: 10px;
+  padding: 0.62rem 0.9rem;
+  font-family: inherit;
+  font-size: 0.9rem;
+  outline: none;
+  cursor: pointer;
+}
+
+.select-input:focus {
+  border-color: var(--cyan);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.order-checkbox {
+  width: 18px;
+  height: 18px;
+  accent-color: var(--cyan);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.order-id-wrap {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  cursor: pointer;
+}
+
 .item-card {
   background: var(--navy-surface);
   border: 1px solid var(--navy-border);
@@ -697,6 +762,12 @@ audio {
   display: flex;
   flex-direction: column;
   gap: 0.65rem;
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+
+.item-card.selected {
+  border-color: var(--cyan);
+  box-shadow: 0 0 0 1px rgba(56, 216, 255, 0.35), 0 8px 20px rgba(56, 216, 255, 0.08);
 }
 
 .item-card-top {

@@ -37,6 +37,7 @@ let state = {
   intent: 'status',
   extractedOrderId: 'SF-1048',
   orders: [],
+  selectedOrderIds: new Set(),
   auditLogs: [],
   uploadedFileName: null,
   isAudioApproved: false,
@@ -113,6 +114,7 @@ function initLanguageToggle() {
     setDialect(state.dialect);
     renderHistory();
     renderOrdersPanel();
+    updateBatchToolbar();
     lookupOrder(state.extractedOrderId);
   });
 }
@@ -308,6 +310,62 @@ function initActions() {
     renderHistory();
     logEvent('history.cleared', null, 'operator', 'Cleared saved transcript history');
   });
+
+  const selectAllCheckbox = document.getElementById('selectAllOrdersCheckbox');
+  const batchStatusSelect = document.getElementById('batchStatusSelect');
+  const applyBatchBtn = document.getElementById('applyBatchStatusBtn');
+
+  if (selectAllCheckbox) {
+    selectAllCheckbox.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        state.orders.forEach(o => state.selectedOrderIds.add(o.id));
+      } else {
+        state.selectedOrderIds.clear();
+      }
+      renderOrdersPanel();
+      updateBatchToolbar();
+    });
+  }
+
+  if (batchStatusSelect) {
+    batchStatusSelect.addEventListener('change', updateBatchToolbar);
+  }
+
+  if (applyBatchBtn) {
+    applyBatchBtn.addEventListener('click', () => {
+      const targetStatus = batchStatusSelect ? batchStatusSelect.value : '';
+      if (!targetStatus || state.selectedOrderIds.size === 0) return;
+
+      const updatedIds = Array.from(state.selectedOrderIds);
+      state.orders.forEach(o => {
+        if (state.selectedOrderIds.has(o.id)) {
+          o.status = targetStatus;
+        }
+      });
+
+      state.selectedOrderIds.clear();
+      if (batchStatusSelect) batchStatusSelect.value = '';
+      renderOrdersPanel();
+      updateBatchToolbar();
+      lookupOrder(state.extractedOrderId);
+
+      const banner = document.getElementById('ordersBatchBanner');
+      if (banner) {
+        banner.textContent = state.lang === 'ar'
+          ? `✓ تم تحديث حالة ${updatedIds.length} طلبات إلى "${targetStatus}" بنجاح`
+          : `✓ Updated ${updatedIds.length} order(s) to "${targetStatus}"`;
+        banner.classList.add('show');
+        setTimeout(() => banner.classList.remove('show'), 3500);
+      }
+
+      logEvent(
+        'orders.batch_status_updated',
+        updatedIds.join(', '),
+        'human.operator',
+        `Batch updated ${updatedIds.length} orders to status: ${targetStatus}`
+      );
+    });
+  }
 }
 
 function analyzeTranscript(text) {
@@ -391,24 +449,68 @@ function renderQuickOrderChips() {
   });
 }
 
+function getOrderStatusClass(status) {
+  const s = (status || '').toLowerCase();
+  if (s === 'completed' || s === 'delivered' || s === 'verified') return 'status-pill green';
+  if (s === 'pending' || s === 'delayed' || s === 'address issue') return 'status-pill amber';
+  return 'status-pill';
+}
+
+function updateBatchToolbar() {
+  const countPill = document.getElementById('selectedOrdersCount');
+  const selectAll = document.getElementById('selectAllOrdersCheckbox');
+  const batchSelect = document.getElementById('batchStatusSelect');
+  const applyBtn = document.getElementById('applyBatchStatusBtn');
+
+  const count = state.selectedOrderIds.size;
+  const total = state.orders.length;
+
+  if (countPill) {
+    countPill.textContent = state.lang === 'ar' ? `${count} محدد` : `${count} selected`;
+    countPill.className = count > 0 ? 'status-pill green' : 'status-pill';
+  }
+  if (selectAll) {
+    selectAll.checked = total > 0 && count === total;
+    selectAll.indeterminate = count > 0 && count < total;
+  }
+  if (applyBtn) {
+    applyBtn.disabled = count === 0 || !(batchSelect && batchSelect.value);
+  }
+}
+
 function renderOrdersPanel() {
   const list = document.getElementById('ordersList');
   list.innerHTML = '';
   state.orders.forEach(o => {
+    const isChecked = state.selectedOrderIds.has(o.id);
     const card = document.createElement('div');
-    card.className = 'item-card';
+    card.className = `item-card${isChecked ? ' selected' : ''}`;
     card.innerHTML = `
       <div class="item-card-top">
-        <strong class="mono" style="color: var(--cyan); font-size: 1.05rem;">${o.id}</strong>
-        <span class="status-pill">${o.status}</span>
+        <label class="order-id-wrap">
+          <input type="checkbox" class="order-checkbox" data-order-id="${o.id}" ${isChecked ? 'checked' : ''} aria-label="Select order ${o.id}" />
+          <strong class="mono" style="color: var(--cyan); font-size: 1.05rem;">${o.id}</strong>
+        </label>
+        <span class="${getOrderStatusClass(o.status)}">${o.status}</span>
       </div>
       <div style="font-size:0.9rem;">${o.city} · ${o.eta}</div>
       <div style="color: var(--text-muted); font-size:0.85rem;">${o.lastScan}</div>
-      <button class="btn btn-outline" type="button" style="margin-top:auto;">
+      <button class="btn btn-outline load-order-btn" type="button" style="margin-top:auto;">
         ${state.lang === 'ar' ? 'اختبار في الاستوديو ←' : 'Load into Studio →'}
       </button>
     `;
-    card.querySelector('button').addEventListener('click', () => {
+    const checkbox = card.querySelector('.order-checkbox');
+    checkbox.addEventListener('change', (e) => {
+      if (e.target.checked) {
+        state.selectedOrderIds.add(o.id);
+        card.classList.add('selected');
+      } else {
+        state.selectedOrderIds.delete(o.id);
+        card.classList.remove('selected');
+      }
+      updateBatchToolbar();
+    });
+    card.querySelector('.load-order-btn').addEventListener('click', () => {
       const txt = state.lang === 'ar'
         ? `أبغى أعرف حالة الطلب ${o.id}`
         : `I want to check the status of order ${o.id}`;
@@ -418,6 +520,7 @@ function renderOrdersPanel() {
     });
     list.appendChild(card);
   });
+  updateBatchToolbar();
 }
 
 function saveCurrentToHistory() {

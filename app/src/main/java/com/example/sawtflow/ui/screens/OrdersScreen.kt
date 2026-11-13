@@ -1,5 +1,6 @@
 package com.example.sawtflow.ui.screens
 
+import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -13,20 +14,31 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowForward
+import androidx.compose.material.icons.automirrored.filled.ArrowForward
+import androidx.compose.material.icons.filled.ArrowDropDown
+import androidx.compose.material.icons.filled.CheckCircle
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material3.Button
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FilterChip
 import androidx.compose.material3.FilterChipDefaults
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
@@ -67,9 +79,14 @@ fun OrdersScreen(
     val orders by viewModel.orders.collectAsState()
     var searchQuery by remember { mutableStateOf("") }
     var selectedFilter by remember { mutableStateOf("All") }
+    var selectedOrderIds by remember { mutableStateOf(setOf<String>()) }
+    var selectedBatchStatus by remember { mutableStateOf("Verified") }
+    var statusDropdownExpanded by remember { mutableStateOf(false) }
+    var batchFeedbackMessage by remember { mutableStateOf<String?>(null) }
     val isAr = language == AppLanguage.AR
 
-    val filterOptions = listOf("All", "In transit", "Delivered", "Delayed", "Canceled", "Ready for pickup")
+    val filterOptions = listOf("All", "Pending", "Verified", "Completed", "In transit", "Delivered", "Delayed", "Canceled", "Ready for pickup")
+    val batchStatusOptions = listOf("Pending", "Verified", "Completed")
 
     val filteredOrders = orders.filter { order ->
         val matchesSearch = order.id.contains(searchQuery, ignoreCase = true) ||
@@ -78,6 +95,7 @@ fun OrdersScreen(
         val matchesFilter = if (selectedFilter == "All") true else order.status.equals(selectedFilter, ignoreCase = true)
         matchesSearch && matchesFilter
     }
+    val allFilteredSelected = filteredOrders.isNotEmpty() && filteredOrders.all { it.id in selectedOrderIds }
 
     Column(
         modifier = modifier
@@ -165,15 +183,212 @@ fun OrdersScreen(
             }
         }
 
+        // Batch Selection & Status Action Bar
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .testTag("orders_batch_toolbar"),
+            colors = CardDefaults.cardColors(containerColor = NavySurface),
+            shape = RoundedCornerShape(12.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(12.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .clickable {
+                                selectedOrderIds = if (allFilteredSelected) {
+                                    selectedOrderIds - filteredOrders.map { it.id }.toSet()
+                                } else {
+                                    selectedOrderIds + filteredOrders.map { it.id }.toSet()
+                                }
+                            }
+                            .padding(end = 8.dp)
+                    ) {
+                        Checkbox(
+                            checked = allFilteredSelected,
+                            onCheckedChange = { checked ->
+                                selectedOrderIds = if (checked) {
+                                    selectedOrderIds + filteredOrders.map { it.id }.toSet()
+                                } else {
+                                    selectedOrderIds - filteredOrders.map { it.id }.toSet()
+                                }
+                            },
+                            modifier = Modifier.testTag("select_all_orders_checkbox"),
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = CyanAccent,
+                                uncheckedColor = Color.White.copy(alpha = 0.6f),
+                                checkmarkColor = NavyPrimary
+                            )
+                        )
+                        Text(
+                            text = if (isAr) "تحديد الكل" else "Select All",
+                            color = Color.White,
+                            fontSize = 13.sp,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                    }
+
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(999.dp))
+                            .background(if (selectedOrderIds.isNotEmpty()) GreenSuccess.copy(alpha = 0.16f) else NavyCard)
+                            .border(
+                                1.dp,
+                                if (selectedOrderIds.isNotEmpty()) GreenSuccess else NavyLight,
+                                RoundedCornerShape(999.dp)
+                            )
+                            .padding(horizontal = 10.dp, vertical = 4.dp)
+                    ) {
+                        Text(
+                            text = if (isAr) "${selectedOrderIds.size} محدد" else "${selectedOrderIds.size} selected",
+                            color = if (selectedOrderIds.isNotEmpty()) GreenSuccess else Color.White.copy(alpha = 0.7f),
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Box(modifier = Modifier.weight(1f)) {
+                        OutlinedButton(
+                            onClick = { statusDropdownExpanded = true },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .heightIn(min = 48.dp)
+                                .testTag("batch_status_dropdown_button"),
+                            shape = RoundedCornerShape(10.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = NavyCard,
+                                contentColor = Color.White
+                            )
+                        ) {
+                            Text(
+                                text = selectedBatchStatus,
+                                fontSize = 13.sp,
+                                fontWeight = FontWeight.SemiBold,
+                                modifier = Modifier.weight(1f)
+                            )
+                            Icon(
+                                imageVector = Icons.Default.ArrowDropDown,
+                                contentDescription = if (isAr) "اختر الحالة" else "Select Status",
+                                tint = CyanAccent
+                            )
+                        }
+
+                        DropdownMenu(
+                            expanded = statusDropdownExpanded,
+                            onDismissRequest = { statusDropdownExpanded = false },
+                            modifier = Modifier.background(NavyCard)
+                        ) {
+                            batchStatusOptions.forEach { statusOption ->
+                                DropdownMenuItem(
+                                    text = {
+                                        Text(
+                                            text = statusOption,
+                                            color = Color.White,
+                                            fontWeight = if (statusOption == selectedBatchStatus) FontWeight.Bold else FontWeight.Normal
+                                        )
+                                    },
+                                    onClick = {
+                                        selectedBatchStatus = statusOption
+                                        statusDropdownExpanded = false
+                                    }
+                                )
+                            }
+                        }
+                    }
+
+                    Button(
+                        onClick = {
+                            val updatedCount = selectedOrderIds.size
+                            viewModel.batchUpdateOrdersStatus(selectedOrderIds, selectedBatchStatus)
+                            selectedOrderIds = emptySet()
+                            batchFeedbackMessage = if (isAr) {
+                                "تم تحديث حالة $updatedCount طلبات إلى $selectedBatchStatus ✓"
+                            } else {
+                                "Updated $updatedCount order(s) to $selectedBatchStatus ✓"
+                            }
+                        },
+                        enabled = selectedOrderIds.isNotEmpty(),
+                        modifier = Modifier
+                            .heightIn(min = 48.dp)
+                            .testTag("apply_batch_status_button"),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = CyanAccent,
+                            contentColor = NavyPrimary,
+                            disabledContainerColor = NavyCard,
+                            disabledContentColor = Color.White.copy(alpha = 0.4f)
+                        ),
+                        shape = RoundedCornerShape(10.dp)
+                    ) {
+                        Text(
+                            text = if (isAr) "تطبيق" else "Apply",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 13.sp
+                        )
+                    }
+                }
+            }
+        }
+
+        AnimatedVisibility(visible = batchFeedbackMessage != null) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = GreenSuccess.copy(alpha = 0.16f)),
+                shape = RoundedCornerShape(10.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = GreenSuccess,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = batchFeedbackMessage.orEmpty(),
+                        color = GreenSuccess,
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+            }
+        }
+
         // List of orders
         LazyColumn(
             verticalArrangement = Arrangement.spacedBy(10.dp),
             modifier = Modifier.fillMaxSize()
         ) {
-            items(filteredOrders) { order ->
+            items(filteredOrders, key = { it.id }) { order ->
+                val isChecked = order.id in selectedOrderIds
                 OrderItemCard(
                     order = order,
                     isAr = isAr,
+                    isSelected = isChecked,
+                    onToggleSelect = { checked ->
+                        selectedOrderIds = if (checked) {
+                            selectedOrderIds + order.id
+                        } else {
+                            selectedOrderIds - order.id
+                        }
+                    },
                     onSelect = {
                         viewModel.updateOrderInput(order.id)
                         viewModel.retrieveOrder(order.id)
@@ -189,11 +404,20 @@ fun OrdersScreen(
 fun OrderItemCard(
     order: Order,
     isAr: Boolean,
+    isSelected: Boolean,
+    onToggleSelect: (Boolean) -> Unit,
     onSelect: () -> Unit
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
+            .then(
+                if (isSelected) {
+                    Modifier.border(1.5.dp, CyanAccent, RoundedCornerShape(12.dp))
+                } else {
+                    Modifier
+                }
+            )
             .clickable { onSelect() }
             .testTag("order_item_${order.id}"),
         colors = CardDefaults.cardColors(containerColor = NavySurface),
@@ -210,8 +434,18 @@ fun OrderItemCard(
             ) {
                 Row(
                     verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
+                    Checkbox(
+                        checked = isSelected,
+                        onCheckedChange = onToggleSelect,
+                        modifier = Modifier.testTag("order_checkbox_${order.id}"),
+                        colors = CheckboxDefaults.colors(
+                            checkedColor = CyanAccent,
+                            uncheckedColor = Color.White.copy(alpha = 0.6f),
+                            checkmarkColor = NavyPrimary
+                        )
+                    )
                     Text(
                         text = order.id,
                         color = CyanAccent,
@@ -231,9 +465,9 @@ fun OrderItemCard(
                         .clip(RoundedCornerShape(6.dp))
                         .background(
                             when (order.status) {
-                                "Delivered" -> GreenSuccess
+                                "Delivered", "Completed", "Verified" -> GreenSuccess
                                 "Canceled" -> Color(0xFFBA1A1A)
-                                "Delayed" -> AmberAccent
+                                "Delayed", "Pending" -> AmberAccent
                                 else -> CyanAccent.copy(alpha = 0.2f)
                             }
                         )
@@ -241,7 +475,11 @@ fun OrderItemCard(
                 ) {
                     Text(
                         text = order.status,
-                        color = if (order.status == "Delivered" || order.status == "Canceled") Color.White else CyanAccent,
+                        color = when (order.status) {
+                            "Delivered", "Completed", "Verified", "Canceled" -> Color.White
+                            "Delayed", "Pending" -> NavyPrimary
+                            else -> CyanAccent
+                        },
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -299,7 +537,7 @@ fun OrderItemCard(
                 )
                 Spacer(modifier = Modifier.width(4.dp))
                 Icon(
-                    imageVector = Icons.Default.ArrowForward,
+                    imageVector = Icons.AutoMirrored.Filled.ArrowForward,
                     contentDescription = null,
                     tint = AmberAccent,
                     modifier = Modifier.height(14.dp)

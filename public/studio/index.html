@@ -231,6 +231,28 @@
       <div class="step-top" style="margin-bottom: 1rem;">
         <h2 data-ar="قاعدة بيانات الطلبات (11 سجل)" data-en="Operational Orders Database (11 Records)">قاعدة بيانات الطلبات (11 سجل)</h2>
       </div>
+
+      <div class="batch-toolbar" id="ordersBatchToolbar">
+        <label class="select-all-label">
+          <input type="checkbox" id="selectAllOrdersCheckbox" class="order-checkbox" />
+          <span data-ar="تحديد الكل" data-en="Select All">تحديد الكل</span>
+          <span class="status-pill" id="selectedOrdersCount">0 محدد</span>
+        </label>
+
+        <div class="batch-controls">
+          <select id="batchStatusSelect" class="select-input" aria-label="Batch status action">
+            <option value="" data-ar="-- اختر الحالة للتحديث --" data-en="-- Select status --">-- اختر الحالة للتحديث --</option>
+            <option value="Pending" data-ar="Pending (قيد الانتظار)" data-en="Pending">Pending (قيد الانتظار)</option>
+            <option value="Verified" data-ar="Verified (تم التحقق)" data-en="Verified">Verified (تم التحقق)</option>
+            <option value="Completed" data-ar="Completed (مكتمل)" data-en="Completed">Completed (مكتمل)</option>
+          </select>
+          <button class="btn btn-cyan" id="applyBatchStatusBtn" type="button" disabled data-ar="تطبيق على المحدد" data-en="Apply to Selected">
+            تطبيق على المحدد
+          </button>
+        </div>
+      </div>
+
+      <div class="toast-banner" id="ordersBatchBanner" style="margin-top: 0; margin-bottom: 1rem;"></div>
       <div class="list-grid" id="ordersList"></div>
     </section>
 

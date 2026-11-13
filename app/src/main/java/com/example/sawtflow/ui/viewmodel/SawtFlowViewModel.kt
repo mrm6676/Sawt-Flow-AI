@@ -680,6 +680,17 @@ class SawtFlowViewModel(
         )
     }
 
+    fun batchUpdateOrdersStatus(orderIds: Set<String>, newStatus: String) {
+        if (orderIds.isEmpty() || newStatus.isBlank()) return
+        repository.updateOrdersStatus(orderIds, newStatus)
+        val activeId = _uiState.value.activeOrder?.id
+        if (activeId != null && orderIds.any { it.equals(activeId, ignoreCase = true) }) {
+            _uiState.value = _uiState.value.copy(
+                activeOrder = repository.findOrder(activeId)
+            )
+        }
+    }
+
     companion object {
         fun provideFactory(application: Application): ViewModelProvider.Factory =
             object : ViewModelProvider.Factory {

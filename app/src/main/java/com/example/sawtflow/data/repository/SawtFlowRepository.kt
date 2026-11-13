@@ -147,6 +147,24 @@ class SawtFlowRepository {
         return _orders.value.find { it.id.equals(normalized, ignoreCase = true) }
     }
 
+    fun updateOrdersStatus(orderIds: Set<String>, newStatus: String) {
+        if (orderIds.isEmpty() || newStatus.isBlank()) return
+        val normalizedIds = orderIds.map { it.trim().uppercase() }.toSet()
+        _orders.value = _orders.value.map { order ->
+            if (order.id.uppercase() in normalizedIds) {
+                order.copy(status = newStatus)
+            } else {
+                order
+            }
+        }
+        logEvent(
+            eventType = "orders.batch_status_updated",
+            orderId = normalizedIds.joinToString(", "),
+            actor = "human.operator",
+            details = "Batch updated ${normalizedIds.size} order(s) to status: $newStatus"
+        )
+    }
+
     fun logEvent(eventType: String, orderId: String?, actor: String, details: String) {
         val entry = AuditLogEntry(
             id = UUID.randomUUID().toString().take(8),
