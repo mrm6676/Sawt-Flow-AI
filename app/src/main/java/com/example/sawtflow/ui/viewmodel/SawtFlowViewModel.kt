@@ -74,6 +74,7 @@ data class StudioUiState(
     val uploadedAudioName: String? = null,
     val uploadedAudioSize: String? = null,
     val uploadedAudioUri: String? = null,
+    val isUploadedAudioApproved: Boolean = false,
     val isPlayingAudio: Boolean = false,
     val playbackProgress: Float = 0f,
     val playbackPosition: String = "00:00",
@@ -378,10 +379,11 @@ class SawtFlowViewModel(
             uploadedAudioName = name,
             uploadedAudioSize = sizeStr,
             uploadedAudioUri = uriString,
+            isUploadedAudioApproved = false,
             isPlayingAudio = false,
             playbackProgress = 0f,
             playbackPosition = "00:00",
-            audioStatusMessage = if (isAr) "تم تحميل الصوت: $name · جاهز للمعاينة والتوليد" else "Audio loaded: $name · preview before sending",
+            audioStatusMessage = if (isAr) "تم تحميل الصوت: $name · جاهز للمعاينة والاعتماد" else "Audio loaded: $name · preview & approve",
             confidence = "97.8%",
             isApproved = false,
             isRetrieved = false
@@ -454,10 +456,27 @@ class SawtFlowViewModel(
             uploadedAudioName = null,
             uploadedAudioSize = null,
             uploadedAudioUri = null,
+            isUploadedAudioApproved = false,
             isPlayingAudio = false,
             playbackProgress = 0f,
             playbackPosition = "00:00",
             audioStatusMessage = if (isAr) "تمت إزالة الصوت المرفوع" else "Uploaded audio cleared"
+        )
+    }
+
+    fun approveUploadedAudio() {
+        val current = _uiState.value
+        if (current.uploadedAudioName == null) return
+        val isAr = current.language == AppLanguage.AR
+        _uiState.value = current.copy(
+            isUploadedAudioApproved = true,
+            audioStatusMessage = if (isAr) "تم اعتماد التسجيل الصوتي ✓" else "Voice recording approved ✓"
+        )
+        repository.logEvent(
+            eventType = "audio.recording_approved",
+            orderId = current.extractedOrderId,
+            actor = "human.operator",
+            details = "Approved uploaded voice recording: ${current.uploadedAudioName}"
         )
     }
 
@@ -468,6 +487,7 @@ class SawtFlowViewModel(
             uploadedAudioName = fileName,
             uploadedAudioSize = sizeStr,
             uploadedAudioUri = null,
+            isUploadedAudioApproved = false,
             isPlayingAudio = false,
             playbackProgress = 0f,
             playbackPosition = "00:00",

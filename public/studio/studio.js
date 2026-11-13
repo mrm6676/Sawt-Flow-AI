@@ -39,6 +39,7 @@ let state = {
   orders: [],
   auditLogs: [],
   uploadedFileName: null,
+  isAudioApproved: false,
   isRecording: false,
   mediaRecorder: null,
   audioChunks: []
@@ -94,6 +95,19 @@ function initLanguageToggle() {
       el.textContent = state.lang === 'ar' ? el.dataset.ar : el.dataset.en;
     });
 
+    const approveAudioBtn = document.getElementById('approveAudioBtn');
+    const audioStatusPill = document.getElementById('audioStatusPill');
+    if (approveAudioBtn && state.isAudioApproved) {
+      approveAudioBtn.textContent = state.lang === 'ar' ? 'تم اعتماد التسجيل الصوتي ✓' : 'Voice Recording Approved ✓';
+      if (audioStatusPill) {
+        audioStatusPill.textContent = state.lang === 'ar' ? 'تم اعتماد التسجيل ✓' : 'RECORDING APPROVED ✓';
+      }
+    } else if (audioStatusPill) {
+      audioStatusPill.textContent = state.uploadedFileName
+        ? (state.lang === 'ar' ? 'تم تحميل الملف ✓' : 'AUDIO READY ✓')
+        : (state.lang === 'ar' ? 'جاهز' : 'READY');
+    }
+
     setDialect(state.dialect);
     renderHistory();
     renderOrdersPanel();
@@ -147,12 +161,20 @@ function initDropzone() {
 
 function handleAudioFile(file) {
   state.uploadedFileName = file.name;
+  state.isAudioApproved = false;
   const sizeKB = Math.max(1, Math.round(file.size / 1024));
   document.getElementById('uploadedFileName').textContent = file.name;
   document.getElementById('uploadedFileSize').textContent = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
   document.getElementById('audioPlayerBox').classList.add('show');
   document.getElementById('audioPreview').src = URL.createObjectURL(file);
   document.getElementById('audioStatusPill').textContent = state.lang === 'ar' ? 'تم تحميل الملف ✓' : 'AUDIO READY ✓';
+  document.getElementById('audioStatusPill').className = 'status-pill';
+
+  const approveAudioBtn = document.getElementById('approveAudioBtn');
+  if (approveAudioBtn) {
+    approveAudioBtn.disabled = false;
+    approveAudioBtn.textContent = state.lang === 'ar' ? '✓ اعتماد التسجيل الصوتي' : '✓ Approve Voice Recording';
+  }
 
   const match = file.name.match(/\bSF[-\s]?\d{4}\b/i);
   if (match) {
@@ -232,6 +254,19 @@ function initActions() {
     document.getElementById('approvedBanner').classList.add('show');
     logEvent('action.approved', state.extractedOrderId, 'human.operator', `Approved response for ${state.extractedOrderId}`);
   });
+
+  const approveAudioBtn = document.getElementById('approveAudioBtn');
+  if (approveAudioBtn) {
+    approveAudioBtn.addEventListener('click', () => {
+      state.isAudioApproved = true;
+      approveAudioBtn.disabled = true;
+      approveAudioBtn.textContent = state.lang === 'ar' ? 'تم اعتماد التسجيل الصوتي ✓' : 'Voice Recording Approved ✓';
+      const statusPill = document.getElementById('audioStatusPill');
+      statusPill.textContent = state.lang === 'ar' ? 'تم اعتماد التسجيل ✓' : 'RECORDING APPROVED ✓';
+      statusPill.className = 'status-pill green';
+      logEvent('audio.recording_approved', state.extractedOrderId, 'human.operator', `Approved uploaded voice recording: ${state.uploadedFileName}`);
+    });
+  }
 
   document.getElementById('historySearchInput').addEventListener('input', renderHistory);
   document.getElementById('clearHistoryBtn').addEventListener('click', () => {

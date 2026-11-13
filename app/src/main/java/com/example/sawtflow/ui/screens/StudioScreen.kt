@@ -22,6 +22,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -406,11 +407,43 @@ fun StudioScreen(
                                 }
                             }
 
+                            // Approve Voice Recording Button (appears after uploading a voice recording)
+                            Button(
+                                onClick = { viewModel.approveUploadedAudio() },
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .heightIn(min = 48.dp)
+                                    .testTag("approve_voice_recording_button"),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = if (state.isUploadedAudioApproved) GreenSuccess else CyanAccent,
+                                    contentColor = if (state.isUploadedAudioApproved) Color.White else NavyPrimary
+                                ),
+                                shape = RoundedCornerShape(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = if (isAr) "اعتماد التسجيل الصوتي" else "Approve Voice Recording",
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = when {
+                                        state.isUploadedAudioApproved && isAr -> "تم اعتماد التسجيل الصوتي ✓"
+                                        state.isUploadedAudioApproved -> "Voice Recording Approved ✓"
+                                        isAr -> "اعتماد التسجيل الصوتي"
+                                        else -> "Approve Voice Recording"
+                                    },
+                                    fontWeight = FontWeight.Bold,
+                                    fontSize = 13.sp
+                                )
+                            }
+
                             // Transcribe with Gemini API Button
                             Button(
                                 onClick = { viewModel.transcribeAudioWithGemini(context) },
                                 modifier = Modifier
                                     .fillMaxWidth()
+                                    .heightIn(min = 48.dp)
                                     .testTag("gemini_transcribe_button"),
                                 colors = ButtonDefaults.buttonColors(
                                     containerColor = AmberAccent,
