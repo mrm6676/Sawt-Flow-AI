@@ -52,7 +52,7 @@ class GeminiTranscriptionService {
                 You are SawtFlow AI, an advanced Arabic voice intelligence and speech-to-text engine.
                 Your task is to transcribe the spoken Arabic content from the audio recording into accurate written text.
                 - Support Arabic colloquial dialects (Saudi/Gulf, Egyptian, Levantine, Maghrebi) and mixed Arabic/English speech.
-                - Preserve spoken numbers, dates, customer intent, and order IDs (format: SF-XXXX, e.g., SF-1048, SF-2086, SF-3312, SF-4420, SF-5177).
+                - Preserve spoken numbers, dates, customer intent, and any order IDs or reference numbers (e.g., SF-1048, ORD-2045, #5520, or numeric order references).
                 - Transcribe what the speaker actually said without rewriting their intent.
                 - Provide ONLY the direct transcribed text. Do not include markdown code blocks, prefixes, or commentary.
             """.trimIndent()
@@ -81,8 +81,17 @@ class GeminiTranscriptionService {
             val rawText = response.text?.trim()
                 ?: throw IllegalStateException("Gemini returned empty response.")
 
-            // Detect order ID pattern if present
-            val orderMatch = "\\bSF[-\\s]?\\d{4}\\b".toRegex(RegexOption.IGNORE_CASE).find(rawText)?.value?.replace("\\s+".toRegex(), "-")
+            // Detect any flexible order ID pattern if present
+            val prefixedMatch = "\\b([A-Z]{2,4})[-\\s]?(\\d{3,6})\\b".toRegex(RegexOption.IGNORE_CASE).find(rawText)
+            val hashMatch = "(?:order|id|ref|#|طلبية|طلب|رقم)\\s*[:#-]?\\s*([A-Z0-9-]{3,12})".toRegex(RegexOption.IGNORE_CASE).find(rawText)
+            val orderMatch = when {
+                prefixedMatch != null -> "${prefixedMatch.groupValues[1].uppercase()}-${prefixedMatch.groupValues[2]}"
+                hashMatch != null && hashMatch.groupValues[1].any { it.isDigit() } -> {
+                    val raw = hashMatch.groupValues[1].uppercase()
+                    if (raw.contains("-")) raw else "ORD-$raw"
+                }
+                else -> null
+            }
 
             GeminiTranscriptionResult(
                 transcript = rawText,

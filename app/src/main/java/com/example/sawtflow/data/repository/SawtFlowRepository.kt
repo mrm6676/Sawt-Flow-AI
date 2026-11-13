@@ -147,6 +147,49 @@ class SawtFlowRepository {
         return _orders.value.find { it.id.equals(normalized, ignoreCase = true) }
     }
 
+    fun findOrCreateOrder(orderId: String, sourceContext: String = "Live Voice Intake"): Order {
+        val normalized = orderId.trim().uppercase().ifBlank {
+            "VF-${(1000..9999).random()}"
+        }
+        findOrder(normalized)?.let { return it }
+
+        val timeNow = formatCurrentTime()
+        val created = Order(
+            id = normalized,
+            status = "Pending",
+            eta = "Pending confirmation",
+            lastScan = "$sourceContext · $timeNow",
+            response = "Order $normalized has been logged from voice intake and is ready for operator verification and dispatch.",
+            responseAr = "تم تسجيل الطلب $normalized من المدخل الصوتي وهو جاهز لمراجعة المشغّل والاعتماد.",
+            city = "Live Intake",
+            totalAmount = 0.0
+        )
+        _orders.value = listOf(created) + _orders.value
+        logEvent(
+            eventType = "order.registered",
+            orderId = normalized,
+            actor = "system",
+            details = "Registered live order record $normalized ($sourceContext)"
+        )
+        return created
+    }
+
+    fun updateSingleOrderStatus(orderId: String, newStatus: String) {
+        val normalized = orderId.trim().uppercase()
+        if (normalized.isBlank() || newStatus.isBlank()) return
+        val timeNow = formatCurrentTime()
+        _orders.value = _orders.value.map { order ->
+            if (order.id.equals(normalized, ignoreCase = true)) {
+                order.copy(
+                    status = newStatus,
+                    lastScan = "Approved by operator · $timeNow"
+                )
+            } else {
+                order
+            }
+        }
+    }
+
     fun updateOrdersStatus(orderIds: Set<String>, newStatus: String) {
         if (orderIds.isEmpty() || newStatus.isBlank()) return
         val normalizedIds = orderIds.map { it.trim().uppercase() }.toSet()

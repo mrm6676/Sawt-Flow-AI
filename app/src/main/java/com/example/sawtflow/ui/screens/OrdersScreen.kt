@@ -106,7 +106,7 @@ fun OrdersScreen(
     ) {
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
-                text = if (isAr) "قاعدة بيانات الطلبات / 11 سجلاً موثقاً" else "OPERATIONAL ORDERS DATABASE / 11 RECORDS",
+                text = if (isAr) "قاعدة بيانات الطلبات / ${orders.size} سجلاً موثقاً" else "OPERATIONAL ORDERS DATABASE / ${orders.size} RECORDS",
                 color = CyanAccent,
                 fontFamily = FontFamily.Monospace,
                 fontSize = 11.sp,

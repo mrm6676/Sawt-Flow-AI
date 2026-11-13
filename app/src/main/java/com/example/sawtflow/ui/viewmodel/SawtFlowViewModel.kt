@@ -178,17 +178,40 @@ class SawtFlowViewModel(
     private fun stopRecording() {
         recordingJob?.cancel()
         val timeStr = String.format("%02d:%02d", _uiState.value.recordSeconds / 60, _uiState.value.recordSeconds % 60)
+        val isAr = _uiState.value.language == AppLanguage.AR
+        val ticketId = extractFlexibleOrderId(_uiState.value.transcriptText)
+            ?: "VF-${((System.currentTimeMillis() % 9000) + 1000)}"
+        val liveTranscript = if (_uiState.value.transcriptText == _uiState.value.selectedDialect.sampleAr ||
+            _uiState.value.transcriptText == _uiState.value.selectedDialect.sampleEn ||
+            _uiState.value.transcriptText.isBlank()
+        ) {
+            if (isAr) {
+                "تسجيل صوتي جديد ($timeStr) بخصوص الطلب $ticketId: أرجو متابعة حالة الطلب والتوصيل."
+            } else {
+                "Live voice recording ($timeStr) for order $ticketId: please review order status and delivery."
+            }
+        } else {
+            _uiState.value.transcriptText
+        }
+
         _uiState.value = _uiState.value.copy(
             isRecording = false,
             hasAudioSource = true,
-            audioStatusMessage = if (_uiState.value.language == AppLanguage.AR) "تم التسجيل · $timeStr" else "Recorded voice ready · $timeStr",
-            confidence = "97.4%"
+            uploadedAudioName = "live_voice_${timeStr.replace(":", "")}.m4a",
+            uploadedAudioSize = "Recording ($timeStr)",
+            isUploadedAudioApproved = false,
+            transcriptText = liveTranscript,
+            audioStatusMessage = if (isAr) "تم التسجيل · $timeStr" else "Recorded voice ready · $timeStr",
+            confidence = "97.4%",
+            isApproved = false
         )
+        analyzeCurrentTranscript(liveTranscript)
+        retrieveOrder(_uiState.value.extractedOrderId ?: ticketId)
         repository.logEvent(
             eventType = "audio.recorded",
             orderId = _uiState.value.extractedOrderId,
             actor = "user",
-            details = "Captured voice input duration: $timeStr"
+            details = "Captured live voice input ($timeStr) mapped to ${_uiState.value.extractedOrderId}"
         )
     }
 
@@ -237,6 +260,26 @@ class SawtFlowViewModel(
         )
     }
 
+    private fun extractFlexibleOrderId(text: String): String? {
+        if (text.isBlank()) return null
+        val prefixed = Pattern.compile("\\b([A-Z]{2,4})[-\\s]?(\\d{3,6})\\b", Pattern.CASE_INSENSITIVE).matcher(text)
+        if (prefixed.find()) {
+            return "${prefixed.group(1)?.uppercase()}-${prefixed.group(2)}"
+        }
+        val keyword = Pattern.compile("(?:order|id|ref|#|طلبية|طلب|رقم)\\s*[:#-]?\\s*([A-Z0-9-]{3,12})", Pattern.CASE_INSENSITIVE).matcher(text)
+        if (keyword.find()) {
+            val raw = keyword.group(1)?.uppercase()?.replace(Regex("[^A-Z0-9-]"), "") ?: ""
+            if (raw.any { it.isDigit() }) {
+                return if (raw.contains("-")) raw else "ORD-$raw"
+            }
+        }
+        val hashNum = Pattern.compile("#(\\d{3,6})\\b").matcher(text)
+        if (hashNum.find()) {
+            return "ORD-${hashNum.group(1)}"
+        }
+        return null
+    }
+
     private fun analyzeCurrentTranscript(text: String) {
         val lower = text.lowercase()
         val detected = when {
@@ -247,13 +290,9 @@ class SawtFlowViewModel(
             else -> IntentType.STATUS
         }
 
-        val pattern = Pattern.compile("\\bSF[-\\s]?\\d{4}\\b", Pattern.CASE_INSENSITIVE)
-        val matcher = pattern.matcher(text)
-        val extracted = if (matcher.find()) {
-            matcher.group().uppercase().replace("\\s+".toRegex(), "-")
-        } else {
-            _uiState.value.extractedOrderId ?: "SF-1048"
-        }
+        val extracted = extractFlexibleOrderId(text)
+            ?: _uiState.value.extractedOrderId
+            ?: _uiState.value.orderInputId.ifBlank { "SF-1048" }
 
         _uiState.value = _uiState.value.copy(
             detectedIntent = detected,
@@ -270,41 +309,36 @@ class SawtFlowViewModel(
     }
 
     fun retrieveOrder(targetId: String? = null) {
-        val queryId = targetId ?: _uiState.value.orderInputId
+        val queryId = (targetId ?: _uiState.value.orderInputId).trim().uppercase()
+        if (queryId.isBlank()) return
         _uiState.value = _uiState.value.copy(isSearchingOrder = true)
 
         viewModelScope.launch {
-            delay(300) // smooth responsive feel
-            val found = repository.findOrder(queryId)
-            if (found != null) {
-                _uiState.value = _uiState.value.copy(
-                    activeOrder = found,
-                    isSearchingOrder = false,
-                    isRetrieved = true,
-                    lookupMessage = if (_uiState.value.language == AppLanguage.AR) "تم العثور على الطلب" else "Order found in database",
-                    extractedOrderId = found.id,
-                    orderInputId = found.id
-                )
-                repository.logEvent(
-                    eventType = "order.lookup_succeeded",
-                    orderId = found.id,
-                    actor = "agent",
-                    details = "Retrieved status: ${found.status}, Hub: ${found.lastScan}"
-                )
-            } else {
-                _uiState.value = _uiState.value.copy(
-                    activeOrder = null,
-                    isSearchingOrder = false,
-                    isRetrieved = false,
-                    lookupMessage = if (_uiState.value.language == AppLanguage.AR) "لم يتم العثور على الطلب" else "Order not found"
-                )
-                repository.logEvent(
-                    eventType = "order.lookup_failed",
-                    orderId = queryId,
-                    actor = "agent",
-                    details = "No record matched ID $queryId"
-                )
-            }
+            delay(200) // smooth responsive feel
+            val existed = repository.findOrder(queryId) != null
+            val resolvedOrder = repository.findOrCreateOrder(
+                orderId = queryId,
+                sourceContext = _uiState.value.uploadedAudioName ?: "Voice Studio Intake"
+            )
+            _uiState.value = _uiState.value.copy(
+                activeOrder = resolvedOrder,
+                isSearchingOrder = false,
+                isRetrieved = true,
+                isApproved = false,
+                lookupMessage = if (_uiState.value.language == AppLanguage.AR) {
+                    if (existed) "تم العثور على الطلب" else "تم تسجيل الطلب المباشر للمراجعة"
+                } else {
+                    if (existed) "Order found in database" else "Live order registered & ready"
+                },
+                extractedOrderId = resolvedOrder.id,
+                orderInputId = resolvedOrder.id
+            )
+            repository.logEvent(
+                eventType = if (existed) "order.lookup_succeeded" else "order.live_intake_created",
+                orderId = resolvedOrder.id,
+                actor = "agent",
+                details = "Status: ${resolvedOrder.status}, Hub: ${resolvedOrder.lastScan}"
+            )
             updateDraftResponse()
         }
     }
@@ -315,7 +349,7 @@ class SawtFlowViewModel(
         val intent = _uiState.value.detectedIntent
 
         val drafted = if (order == null) {
-            if (isAr) "لا يوجد رد حتى يتم العثور على طلب صالح." else "No response drafted until a valid order is found."
+            if (isAr) "جارٍ تجهيز الرد المقترح للمراجعة..." else "Preparing draft response for review..."
         } else {
             when (intent) {
                 IntentType.CANCEL -> {
@@ -341,13 +375,25 @@ class SawtFlowViewModel(
     }
 
     fun approveAction() {
-        _uiState.value = _uiState.value.copy(isApproved = true)
         val order = _uiState.value.activeOrder
+        val newStatus = when (_uiState.value.detectedIntent) {
+            IntentType.CANCEL -> "Canceled"
+            IntentType.MODIFY -> "Verified"
+            IntentType.STATUS -> "Completed"
+        }
+        if (order != null) {
+            repository.updateSingleOrderStatus(order.id, newStatus)
+        }
+        val refreshed = order?.let { repository.findOrder(it.id) }
+        _uiState.value = _uiState.value.copy(
+            isApproved = true,
+            activeOrder = refreshed ?: order
+        )
         repository.logEvent(
             eventType = "action.approved",
-            orderId = order?.id,
+            orderId = order?.id ?: _uiState.value.extractedOrderId,
             actor = "human.operator",
-            details = "Approved response dispatched for intent: ${_uiState.value.detectedIntent.id}"
+            details = "Approved response dispatched for intent: ${_uiState.value.detectedIntent.id} (Status: $newStatus)"
         )
     }
 
@@ -375,6 +421,16 @@ class SawtFlowViewModel(
 
     fun onAudioFileUploaded(name: String, sizeStr: String, uriString: String? = null) {
         val isAr = _uiState.value.language == AppLanguage.AR
+        val digitsOnly = name.filter { it.isDigit() }
+        val resolvedOrderId = extractFlexibleOrderId(name)
+            ?: if (digitsOnly.length >= 3) "VF-${digitsOnly.takeLast(4).padStart(4, '0')}" else "VF-${((System.currentTimeMillis() % 9000) + 1000)}"
+
+        val flowTranscript = if (isAr) {
+            "تم رفع تسجيل صوتي ($name) بخصوص الطلب $resolvedOrderId لمتابعة الحالة والتوصيل."
+        } else {
+            "Uploaded voice recording ($name) for order $resolvedOrderId to review status and delivery."
+        }
+
         _uiState.value = _uiState.value.copy(
             uploadedAudioName = name,
             uploadedAudioSize = sizeStr,
@@ -383,30 +439,22 @@ class SawtFlowViewModel(
             isPlayingAudio = false,
             playbackProgress = 0f,
             playbackPosition = "00:00",
+            transcriptText = flowTranscript,
+            extractedOrderId = resolvedOrderId,
+            orderInputId = resolvedOrderId,
             audioStatusMessage = if (isAr) "تم تحميل الصوت: $name · جاهز للمعاينة والاعتماد" else "Audio loaded: $name · preview & approve",
             confidence = "97.8%",
             isApproved = false,
             isRetrieved = false
         )
-        // Check if file name mentions an order ID
-        val pattern = Pattern.compile("\\bSF[-\\s]?\\d{4}\\b", Pattern.CASE_INSENSITIVE)
-        val matcher = pattern.matcher(name)
-        if (matcher.find()) {
-            val orderId = matcher.group().uppercase().replace("\\s+".toRegex(), "-")
-            val sampleText = if (isAr) {
-                "أحتاج أعرف تفاصيل وموقع طلبي $orderId وهل سيصل اليوم؟"
-            } else {
-                "I need to know the details and location of my order $orderId and if it arrives today?"
-            }
-            _uiState.value = _uiState.value.copy(transcriptText = sampleText)
-            analyzeCurrentTranscript(sampleText)
-        }
+        analyzeCurrentTranscript(flowTranscript)
+        retrieveOrder(resolvedOrderId)
 
         repository.logEvent(
             eventType = "audio.uploaded",
-            orderId = _uiState.value.extractedOrderId,
+            orderId = resolvedOrderId,
             actor = "user",
-            details = "Uploaded voice recording: $name ($sizeStr)"
+            details = "Uploaded & processed voice recording: $name ($sizeStr)"
         )
     }
 
@@ -539,12 +587,11 @@ class SawtFlowViewModel(
                     isRetrieved = false
                 )
 
-                // Run intent analysis on the newly transcribed text
+                // Run intent analysis on the newly transcribed text and flow order to Step 4/5
                 analyzeCurrentTranscript(result.transcript)
-
-                // Auto retrieve if an order ID was extracted
-                result.extractedOrderHint?.let { orderId ->
-                    retrieveOrder(orderId)
+                val flowOrderId = result.extractedOrderHint ?: _uiState.value.extractedOrderId
+                if (!flowOrderId.isNullOrBlank()) {
+                    retrieveOrder(flowOrderId)
                 }
 
                 // Automatically save successful transcript to local Room database

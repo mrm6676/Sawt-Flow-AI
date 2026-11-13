@@ -94,6 +94,24 @@
               <span id="uploadedFileName">recording.wav</span>
               <span class="mono" id="uploadedFileSize">0 KB</span>
             </div>
+            <div class="audio-tech-meta" id="audioTechMeta">
+              <div class="audio-meta-chip">
+                <span class="audio-meta-k" data-ar="المدة" data-en="DURATION">المدة</span>
+                <span class="audio-meta-v mono" id="audioMetaDuration">--:--</span>
+              </div>
+              <div class="audio-meta-chip">
+                <span class="audio-meta-k" data-ar="معدل العينة" data-en="SAMPLE RATE">معدل العينة</span>
+                <span class="audio-meta-v mono" id="audioMetaSampleRate">--</span>
+              </div>
+              <div class="audio-meta-chip">
+                <span class="audio-meta-k" data-ar="الترميز" data-en="CODEC">الترميز</span>
+                <span class="audio-meta-v mono" id="audioMetaCodec">--</span>
+              </div>
+              <div class="audio-meta-chip">
+                <span class="audio-meta-k" data-ar="القنوات" data-en="CHANNELS">القنوات</span>
+                <span class="audio-meta-v mono" id="audioMetaChannels">--</span>
+              </div>
+            </div>
             <div class="waveform-visualizer" id="audioWaveform" aria-hidden="true">
               <div class="waveform-bars">
                 <span></span><span></span><span></span><span></span>
@@ -139,6 +157,9 @@
             <textarea id="transcriptInput" class="textarea transcript-textarea" rows="3" spellcheck="false"></textarea>
           </div>
           <div class="kw-legend" id="transcriptKeywordsLegend" aria-live="polite"></div>
+          <div class="autosave-row">
+            <span class="autosave-status" id="draftAutoSaveStatus" aria-live="polite"></span>
+          </div>
 
           <div class="btn-row">
             <button class="btn btn-cyan" id="analyzeBtn" type="button" data-ar="تحليل النية واستخراج الطلب ←" data-en="Analyze Intent & Extract Order →">
@@ -229,7 +250,7 @@
     <!-- ORDERS PANEL -->
     <section class="panel" id="panel-orders">
       <div class="step-top" style="margin-bottom: 1rem;">
-        <h2 data-ar="قاعدة بيانات الطلبات (11 سجل)" data-en="Operational Orders Database (11 Records)">قاعدة بيانات الطلبات (11 سجل)</h2>
+        <h2 id="ordersPanelHeading" data-ar="قاعدة بيانات الطلبات" data-en="Operational Orders Database">قاعدة بيانات الطلبات</h2>
       </div>
 
       <div class="batch-toolbar" id="ordersBatchToolbar">

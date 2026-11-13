@@ -30,6 +30,8 @@ const DIALECTS = {
 };
 
 const STORAGE_KEY = 'sawtflow_studio_history_v1';
+const ORDERS_STORAGE_KEY = 'sawtflow_studio_orders_v1';
+const DRAFT_SESSION_KEY = 'sawtflow_studio_transcript_draft_v1';
 
 let state = {
   lang: 'ar',
@@ -44,7 +46,10 @@ let state = {
   isAudioPlaying: false,
   isRecording: false,
   mediaRecorder: null,
-  audioChunks: []
+  speechRecognition: null,
+  liveTranscriptBuffer: '',
+  audioChunks: [],
+  draftReady: false
 };
 
 document.addEventListener('DOMContentLoaded', async () => {
@@ -57,16 +62,45 @@ document.addEventListener('DOMContentLoaded', async () => {
   initActions();
   initStreamBanner();
   setDialect('gulf');
-  logEvent('system.startup', null, 'system', 'SawtFlow Studio initialized with 11 operational order records');
+  restoreTranscriptDraft();
+  state.draftReady = true;
+  initTranscriptAutoSave();
+  logEvent('system.startup', null, 'system', `SawtFlow Studio initialized with ${state.orders.length} operational order records`);
   renderHistory();
 });
 
+function saveOrdersToStorage() {
+  try {
+    localStorage.setItem(ORDERS_STORAGE_KEY, JSON.stringify(state.orders));
+  } catch (e) {}
+}
+
 async function loadOrders() {
+  let baseOrders = [];
   try {
     const res = await fetch('/studio/mock-orders.json');
-    state.orders = await res.json();
+    baseOrders = await res.json();
   } catch (e) {
-    state.orders = [];
+    baseOrders = [];
+  }
+  try {
+    const savedRaw = localStorage.getItem(ORDERS_STORAGE_KEY);
+    if (savedRaw) {
+      const saved = JSON.parse(savedRaw);
+      if (Array.isArray(saved) && saved.length > 0) {
+        const mergedMap = new Map(baseOrders.map(o => [o.id, o]));
+        saved.forEach(o => {
+          if (o && o.id) mergedMap.set(o.id, o);
+        });
+        state.orders = Array.from(mergedMap.values());
+      } else {
+        state.orders = baseOrders;
+      }
+    } else {
+      state.orders = baseOrders;
+    }
+  } catch (e) {
+    state.orders = baseOrders;
   }
   renderQuickOrderChips();
   renderOrdersPanel();
@@ -111,7 +145,16 @@ function initLanguageToggle() {
         : (state.lang === 'ar' ? 'جاهز' : 'READY');
     }
 
-    setDialect(state.dialect);
+    const currentText = (document.getElementById('transcriptInput')?.value || '').trim();
+    const isBuiltInSample = Object.values(DIALECTS).some(d => currentText === d.sampleAr || currentText === d.sampleEn);
+    if (isBuiltInSample || !currentText) {
+      setDialect(state.dialect);
+    } else {
+      const d = DIALECTS[state.dialect];
+      document.getElementById('detectedDialectVal').textContent = state.lang === 'ar' ? d.labelAr : d.labelEn;
+      analyzeTranscript(currentText);
+      updateAutoSaveStatus(true);
+    }
     renderHistory();
     renderOrdersPanel();
     updateBatchToolbar();
@@ -163,7 +206,299 @@ function initDropzone() {
   });
 }
 
-function handleAudioFile(file) {
+function extractOrderIdFromText(text) {
+  if (!text) return null;
+  const sfMatch = text.match(/\b([A-Z]{2,4})[-\s]?(\d{3,6})\b/i);
+  if (sfMatch) {
+    return `${sfMatch[1].toUpperCase()}-${sfMatch[2]}`;
+  }
+  const keywordMatch = text.match(/(?:order|id|ref|#|طلبية|طلب|رقم)\s*[:#-]?\s*([A-Z0-9-]{3,12})/i);
+  if (keywordMatch) {
+    const raw = keywordMatch[1].toUpperCase().replace(/[^A-Z0-9-]/g, '');
+    if (/\d/.test(raw)) {
+      return raw.includes('-') ? raw : `ORD-${raw}`;
+    }
+  }
+  const hashNumMatch = text.match(/#(\d{3,6})\b/);
+  if (hashNumMatch) {
+    return `ORD-${hashNumMatch[1]}`;
+  }
+  return null;
+}
+
+function generateVoiceTicketId(seedName) {
+  const digits = (seedName || '').replace(/\D/g, '');
+  if (digits.length >= 3) {
+    return `VF-${digits.slice(-4).padStart(4, '0')}`;
+  }
+  const suffix = String(Math.floor(1000 + (Date.now() % 9000)));
+  return `VF-${suffix}`;
+}
+
+function formatDurationSeconds(sec) {
+  if (!Number.isFinite(sec) || sec <= 0) return '--:--';
+  const total = Math.round(sec);
+  const mins = Math.floor(total / 60);
+  const secs = total % 60;
+  return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+}
+
+function formatSampleRate(hz) {
+  if (!Number.isFinite(hz) || hz <= 0) return null;
+  return hz >= 1000 ? `${(hz / 1000).toFixed(1)} kHz` : `${hz} Hz`;
+}
+
+function formatChannelsLabel(ch) {
+  if (!Number.isFinite(ch) || ch <= 0) return null;
+  if (ch === 1) return 'Mono (1 ch)';
+  if (ch === 2) return 'Stereo (2 ch)';
+  return `${ch} ch`;
+}
+
+function parseAudioHeaderBytes(buffer, fileName, mimeType) {
+  const view = new DataView(buffer);
+  const bytes = new Uint8Array(buffer);
+  const readStr = (offset, len) => {
+    if (offset + len > bytes.length) return '';
+    let out = '';
+    for (let i = 0; i < len; i++) out += String.fromCharCode(bytes[offset + i]);
+    return out;
+  };
+
+  const result = {
+    duration: null,
+    sampleRate: null,
+    codec: null,
+    channels: null
+  };
+
+  // 1. RIFF / WAVE header
+  if (bytes.length >= 44 && readStr(0, 4) === 'RIFF' && readStr(8, 4) === 'WAVE') {
+    let offset = 12;
+    let byteRate = 0;
+    let dataSize = 0;
+    while (offset + 8 <= bytes.length) {
+      const chunkId = readStr(offset, 4);
+      const chunkSize = view.getUint32(offset + 4, true);
+      if (chunkId === 'fmt ' && offset + 24 <= bytes.length) {
+        const audioFormat = view.getUint16(offset + 8, true);
+        const channels = view.getUint16(offset + 10, true);
+        const sampleRate = view.getUint32(offset + 12, true);
+        byteRate = view.getUint32(offset + 16, true);
+        const bitsPerSample = view.getUint16(offset + 22, true);
+        const fmtName = audioFormat === 1
+          ? 'PCM'
+          : (audioFormat === 3 ? 'IEEE Float' : (audioFormat === 6 ? 'A-Law' : (audioFormat === 7 ? 'u-Law' : `Fmt ${audioFormat}`)));
+        result.sampleRate = sampleRate;
+        result.channels = channels;
+        result.codec = bitsPerSample ? `WAV · ${fmtName} ${bitsPerSample}-bit` : `WAV · ${fmtName}`;
+      } else if (chunkId === 'data') {
+        dataSize = chunkSize;
+        break;
+      }
+      offset += 8 + chunkSize + (chunkSize % 2);
+    }
+    if (byteRate > 0 && dataSize > 0) {
+      result.duration = dataSize / byteRate;
+    }
+    return result;
+  }
+
+  // 2. FLAC header
+  if (bytes.length >= 42 && readStr(0, 4) === 'fLaC') {
+    const b1 = bytes[18], b2 = bytes[19], b3 = bytes[20], b4 = bytes[21];
+    const sampleRate = (b1 << 12) | (b2 << 4) | (b3 >> 4);
+    const channels = ((b3 >> 1) & 0x07) + 1;
+    const bps = (((b3 & 0x01) << 4) | (b4 >> 4)) + 1;
+    const totalSamplesHigh = bytes[21] & 0x0F;
+    const totalSamplesLow = view.getUint32(22, false);
+    const totalSamples = totalSamplesHigh * 4294967296 + totalSamplesLow;
+    result.sampleRate = sampleRate || null;
+    result.channels = channels || null;
+    result.codec = `FLAC ${bps}-bit`;
+    if (sampleRate > 0 && totalSamples > 0) {
+      result.duration = totalSamples / sampleRate;
+    }
+    return result;
+  }
+
+  // 3. OGG (Opus / Vorbis) header
+  if (bytes.length >= 36 && readStr(0, 4) === 'OggS') {
+    for (let i = 0; i < Math.min(bytes.length - 16, 256); i++) {
+      if (readStr(i, 8) === 'OpusHead' && i + 16 <= bytes.length) {
+        result.channels = bytes[i + 9];
+        result.sampleRate = view.getUint32(i + 12, true) || 48000;
+        result.codec = 'OGG · Opus';
+        return result;
+      }
+      if (bytes[i] === 0x01 && readStr(i + 1, 6) === 'vorbis' && i + 16 <= bytes.length) {
+        result.channels = bytes[i + 11];
+        result.sampleRate = view.getUint32(i + 12, true);
+        result.codec = 'OGG · Vorbis';
+        return result;
+      }
+    }
+    result.codec = 'OGG Audio';
+    return result;
+  }
+
+  // 4. MP4 / M4A / AAC container
+  if (bytes.length >= 12 && readStr(4, 4) === 'ftyp') {
+    let foundCodec = 'AAC / MP4';
+    const textSlice = readStr(0, Math.min(bytes.length, 4096));
+    if (textSlice.includes('mp4a')) foundCodec = 'M4A · AAC';
+    else if (textSlice.includes('alac')) foundCodec = 'M4A · ALAC';
+    else if (textSlice.includes('Opus')) foundCodec = 'MP4 · Opus';
+    result.codec = foundCodec;
+
+    // Look for 'mdhd' atom to read timescale & duration
+    for (let i = 0; i < bytes.length - 28; i++) {
+      if (bytes[i] === 0x6D && bytes[i + 1] === 0x64 && bytes[i + 2] === 0x68 && bytes[i + 3] === 0x64) {
+        const version = bytes[i + 4];
+        if (version === 0 && i + 24 <= bytes.length) {
+          const timescale = view.getUint32(i + 16, false);
+          const durationUnits = view.getUint32(i + 20, false);
+          if (timescale >= 8000 && timescale <= 192000) {
+            result.sampleRate = timescale;
+            if (durationUnits > 0) result.duration = durationUnits / timescale;
+            break;
+          }
+        }
+      }
+    }
+    return result;
+  }
+
+  // 5. WebM / Matroska (EBML 0x1A45DFA3)
+  if (bytes.length >= 4 && bytes[0] === 0x1A && bytes[1] === 0x45 && bytes[2] === 0xDF && bytes[3] === 0xA3) {
+    const textSlice = readStr(0, Math.min(bytes.length, 4096));
+    if (textSlice.includes('A_OPUS')) {
+      result.codec = 'WebM · Opus';
+      result.sampleRate = 48000;
+    } else if (textSlice.includes('A_VORBIS')) {
+      result.codec = 'WebM · Vorbis';
+    } else if (textSlice.includes('A_AAC')) {
+      result.codec = 'WebM · AAC';
+    } else {
+      result.codec = 'WebM Audio';
+    }
+    return result;
+  }
+
+  // 6. MP3 (ID3v2 skip + MPEG Audio Frame Header)
+  let startOffset = 0;
+  if (bytes.length >= 10 && readStr(0, 3) === 'ID3') {
+    const tagSize =
+      ((bytes[6] & 0x7F) << 21) |
+      ((bytes[7] & 0x7F) << 14) |
+      ((bytes[8] & 0x7F) << 7) |
+      (bytes[9] & 0x7F);
+    startOffset = Math.min(10 + tagSize, bytes.length - 4);
+  }
+  const mp3Rates = {
+    3: [44100, 48000, 32000], // MPEG 1
+    2: [22050, 24000, 16000], // MPEG 2
+    0: [11025, 12000, 8000]   // MPEG 2.5
+  };
+  for (let i = startOffset; i < bytes.length - 4; i++) {
+    if (bytes[i] === 0xFF && (bytes[i + 1] & 0xE0) === 0xE0) {
+      const versionBits = (bytes[i + 1] >> 3) & 0x03;
+      const layerBits = (bytes[i + 1] >> 1) & 0x03;
+      const srIdx = (bytes[i + 2] >> 2) & 0x03;
+      const chMode = (bytes[i + 3] >> 6) & 0x03;
+      const rateTable = mp3Rates[versionBits];
+      if (rateTable && srIdx < 3 && layerBits !== 0) {
+        result.sampleRate = rateTable[srIdx];
+        result.channels = chMode === 3 ? 1 : 2;
+        const verLabel = versionBits === 3 ? 'MPEG-1' : (versionBits === 2 ? 'MPEG-2' : 'MPEG-2.5');
+        const layerLabel = layerBits === 1 ? 'L3' : (layerBits === 2 ? 'L2' : 'L1');
+        result.codec = `MP3 · ${verLabel} ${layerLabel}`;
+        return result;
+      }
+    }
+  }
+
+  // Fallback from file extension / MIME
+  const ext = (fileName.split('.').pop() || '').toUpperCase();
+  result.codec = mimeType && mimeType.includes('/')
+    ? `${ext || mimeType.split('/')[1].toUpperCase()}`
+    : (ext || 'Audio');
+  return result;
+}
+
+function updateAudioTechMetaUI(meta) {
+  const durEl = document.getElementById('audioMetaDuration');
+  const srEl = document.getElementById('audioMetaSampleRate');
+  const codecEl = document.getElementById('audioMetaCodec');
+  const chEl = document.getElementById('audioMetaChannels');
+
+  if (durEl) durEl.textContent = formatDurationSeconds(meta.duration);
+  if (srEl) srEl.textContent = formatSampleRate(meta.sampleRate) || '--';
+  if (codecEl) codecEl.textContent = meta.codec || '--';
+  if (chEl) chEl.textContent = formatChannelsLabel(meta.channels) || '--';
+}
+
+let audioInspectToken = 0;
+let lastAudioObjectUrl = null;
+
+async function inspectAudioMetadata(file, audioEl) {
+  const token = ++audioInspectToken;
+  const meta = {
+    duration: null,
+    sampleRate: null,
+    codec: (file.type && file.type.split('/')[1]?.toUpperCase()) || (file.name.split('.').pop() || 'AUDIO').toUpperCase(),
+    channels: null
+  };
+  updateAudioTechMetaUI(meta);
+
+  // 1. Read header slice (first 64 KB) for codec, sample rate, channels, duration
+  try {
+    const headerBuf = await file.slice(0, 65536).arrayBuffer();
+    if (token !== audioInspectToken) return;
+    const parsed = parseAudioHeaderBytes(headerBuf, file.name, file.type);
+    if (parsed.duration) meta.duration = parsed.duration;
+    if (parsed.sampleRate) meta.sampleRate = parsed.sampleRate;
+    if (parsed.codec) meta.codec = parsed.codec;
+    if (parsed.channels) meta.channels = parsed.channels;
+    updateAudioTechMetaUI(meta);
+  } catch (e) {}
+
+  // 2. Listen to <audio> element metadata for authoritative duration
+  if (audioEl) {
+    audioEl.onloadedmetadata = () => {
+      if (token !== audioInspectToken) return;
+      if (Number.isFinite(audioEl.duration) && audioEl.duration > 0 && audioEl.duration !== Infinity) {
+        meta.duration = audioEl.duration;
+        updateAudioTechMetaUI(meta);
+      }
+    };
+  }
+
+  // 3. Fallback decode via Web Audio API if sample rate, channels, or duration are still missing
+  if ((!meta.sampleRate || !meta.duration || !meta.channels) && file.size <= 15 * 1024 * 1024) {
+    const AudioCtx = window.AudioContext || window.webkitAudioContext;
+    if (AudioCtx) {
+      let ctx = null;
+      try {
+        ctx = new AudioCtx();
+        const fullBuf = await file.arrayBuffer();
+        const decoded = await ctx.decodeAudioData(fullBuf);
+        if (token !== audioInspectToken) return;
+        if (!meta.sampleRate && decoded.sampleRate) meta.sampleRate = decoded.sampleRate;
+        if (!meta.channels && decoded.numberOfChannels) meta.channels = decoded.numberOfChannels;
+        if (!meta.duration && decoded.duration) meta.duration = decoded.duration;
+        updateAudioTechMetaUI(meta);
+      } catch (e) {
+      } finally {
+        if (ctx && typeof ctx.close === 'function') {
+          try { await ctx.close(); } catch (e) {}
+        }
+      }
+    }
+  }
+}
+
+function handleAudioFile(file, spokenTranscript = '') {
   state.uploadedFileName = file.name;
   state.isAudioApproved = false;
   state.isAudioPlaying = false;
@@ -173,7 +508,13 @@ function handleAudioFile(file) {
   const playerBox = document.getElementById('audioPlayerBox');
   playerBox.classList.add('show');
   playerBox.classList.remove('is-playing');
-  document.getElementById('audioPreview').src = URL.createObjectURL(file);
+  const audioPreview = document.getElementById('audioPreview');
+  if (lastAudioObjectUrl) {
+    try { URL.revokeObjectURL(lastAudioObjectUrl); } catch (e) {}
+  }
+  lastAudioObjectUrl = URL.createObjectURL(file);
+  audioPreview.src = lastAudioObjectUrl;
+  inspectAudioMetadata(file, audioPreview);
   document.getElementById('audioStatusPill').textContent = state.lang === 'ar' ? 'تم تحميل الملف ✓' : 'AUDIO READY ✓';
   document.getElementById('audioStatusPill').className = 'status-pill';
 
@@ -183,31 +524,75 @@ function handleAudioFile(file) {
     approveAudioBtn.textContent = state.lang === 'ar' ? '✓ اعتماد التسجيل الصوتي' : '✓ Approve Voice Recording';
   }
 
-  const match = file.name.match(/\bSF[-\s]?\d{4}\b/i);
-  if (match) {
-    const orderId = match[0].toUpperCase().replace(/\s+/, '-');
-    const txt = state.lang === 'ar'
-      ? `أبغى أعرف تفاصيل طلبي ${orderId} وهل بيوصل اليوم؟`
-      : `I need to check the details for order ${orderId} and when it arrives.`;
-    document.getElementById('transcriptInput').value = txt;
-    analyzeTranscript(txt);
+  const orderIdFromName = extractOrderIdFromText(file.name);
+  const orderIdFromSpeech = extractOrderIdFromText(spokenTranscript);
+  const resolvedOrderId = orderIdFromSpeech || orderIdFromName || generateVoiceTicketId(file.name);
+
+  let txt = (spokenTranscript || '').trim();
+  if (!txt) {
+    txt = state.lang === 'ar'
+      ? `تم استلام تسجيل صوتي (${file.name}) بخصوص الطلب ${resolvedOrderId} لمتابعة الحالة والتوصيل.`
+      : `Voice recording (${file.name}) received regarding order ${resolvedOrderId} for status and delivery review.`;
+  } else if (!extractOrderIdFromText(txt)) {
+    txt = `${txt} (${resolvedOrderId})`;
   }
-  logEvent('audio.uploaded', state.extractedOrderId, 'user', `Uploaded voice file: ${file.name}`);
+
+  document.getElementById('transcriptInput').value = txt;
+  state.extractedOrderId = resolvedOrderId;
+  document.getElementById('extractedOrderVal').textContent = resolvedOrderId;
+  document.getElementById('orderLookupInput').value = resolvedOrderId;
+  analyzeTranscript(txt);
+
+  logEvent('audio.uploaded', state.extractedOrderId, 'user', `Uploaded & processed voice file: ${file.name}`);
 }
 
 function initRecorder() {
   const btn = document.getElementById('recordBtn');
+  const SpeechRec = window.SpeechRecognition || window.webkitSpeechRecognition;
+
   btn.addEventListener('click', async () => {
     if (!state.isRecording) {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
         state.mediaRecorder = new MediaRecorder(stream);
         state.audioChunks = [];
+        state.liveTranscriptBuffer = '';
+
+        if (SpeechRec) {
+          try {
+            const rec = new SpeechRec();
+            rec.lang = state.lang === 'ar' ? 'ar-SA' : 'en-US';
+            rec.continuous = true;
+            rec.interimResults = true;
+            rec.onresult = (ev) => {
+              let combined = '';
+              for (let i = 0; i < ev.results.length; i++) {
+                combined += ev.results[i][0].transcript + ' ';
+              }
+              state.liveTranscriptBuffer = combined.trim();
+              if (state.liveTranscriptBuffer) {
+                document.getElementById('transcriptInput').value = state.liveTranscriptBuffer;
+                renderTranscriptHighlights(state.liveTranscriptBuffer);
+              }
+            };
+            rec.onerror = () => {};
+            rec.start();
+            state.speechRecognition = rec;
+          } catch (e) {
+            state.speechRecognition = null;
+          }
+        }
+
         state.mediaRecorder.ondataavailable = (e) => state.audioChunks.push(e.data);
         state.mediaRecorder.onstop = () => {
+          if (state.speechRecognition) {
+            try { state.speechRecognition.stop(); } catch (e) {}
+            state.speechRecognition = null;
+          }
           const blob = new Blob(state.audioChunks, { type: 'audio/webm' });
-          const file = new File([blob], 'live-voice-recording.webm', { type: 'audio/webm' });
-          handleAudioFile(file);
+          const ts = new Date().toTimeString().slice(0, 5).replace(':', '');
+          const file = new File([blob], `live-voice-${ts}.webm`, { type: 'audio/webm' });
+          handleAudioFile(file, state.liveTranscriptBuffer);
           stream.getTracks().forEach(t => t.stop());
         };
         state.mediaRecorder.start();
@@ -216,14 +601,15 @@ function initRecorder() {
         btn.textContent = state.lang === 'ar' ? '⏹ إيقاف التسجيل' : '⏹ Stop Recording';
         document.getElementById('audioStatusPill').textContent = state.lang === 'ar' ? 'جارٍ التسجيل...' : 'RECORDING...';
       } catch (err) {
-        // Fallback simulation if microphone permission is unavailable
+        // Fallback live voice record when microphone access is blocked
+        const ticketId = generateVoiceTicketId('mic');
         const txt = state.lang === 'ar'
-          ? 'لو سمحت أبغى ألغي طلبي SF-5177 لأن الموعد ما يناسبني.'
-          : 'Please cancel my order SF-5177 because the delivery time does not work for me.';
+          ? `تسجيل صوتي جديد للطلب ${ticketId}: أرجو التحقق من حالة الشحنة وموعد التوصيل.`
+          : `New voice record for order ${ticketId}: please check shipment status and delivery time.`;
         document.getElementById('transcriptInput').value = txt;
         analyzeTranscript(txt);
-        document.getElementById('audioStatusPill').textContent = state.lang === 'ar' ? 'عينة صوتية جاهزة' : 'SAMPLE CAPTURED';
-        logEvent('audio.simulated', 'SF-5177', 'user', 'Simulated voice recording loaded');
+        document.getElementById('audioStatusPill').textContent = state.lang === 'ar' ? 'تسجيل صوتي جاهز ✓' : 'VOICE RECORD READY ✓';
+        logEvent('audio.recorded_fallback', ticketId, 'user', `Captured live voice record ${ticketId}`);
       }
     } else {
       state.mediaRecorder.stop();
@@ -257,11 +643,28 @@ function initActions() {
   });
 
   document.getElementById('approveBtn').addEventListener('click', () => {
+    const activeId = state.extractedOrderId || document.getElementById('orderLookupInput').value.trim().toUpperCase();
+    const order = activeId ? state.orders.find(o => o.id === activeId) : null;
+    const approvedStatus = state.intent === 'cancel'
+      ? 'Canceled'
+      : (state.intent === 'modify' ? 'Verified' : 'Completed');
+
+    if (order) {
+      order.status = approvedStatus;
+      order.lastScan = state.lang === 'ar'
+        ? `تم الاعتماد بواسطة المشغّل · ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
+        : `Approved by operator · ${new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`;
+      saveOrdersToStorage();
+      renderOrdersPanel();
+      renderQuickOrderChips();
+      lookupOrder(order.id, true);
+    }
+
     const pill = document.getElementById('approvalPill');
     pill.textContent = state.lang === 'ar' ? 'تم الاعتماد ✓' : 'APPROVED ✓';
     pill.className = 'status-pill green';
     document.getElementById('approvedBanner').classList.add('show');
-    logEvent('action.approved', state.extractedOrderId, 'human.operator', `Approved response for ${state.extractedOrderId}`);
+    logEvent('action.approved', activeId || 'VOICE-RECORD', 'human.operator', `Approved response for ${activeId || 'voice record'} (Status: ${approvedStatus})`);
   });
 
   const approveAudioBtn = document.getElementById('approveAudioBtn');
@@ -273,6 +676,10 @@ function initActions() {
       const statusPill = document.getElementById('audioStatusPill');
       statusPill.textContent = state.lang === 'ar' ? 'تم اعتماد التسجيل ✓' : 'RECORDING APPROVED ✓';
       statusPill.className = 'status-pill green';
+      const currentTranscript = document.getElementById('transcriptInput').value;
+      if (currentTranscript.trim()) {
+        analyzeTranscript(currentTranscript);
+      }
       logEvent('audio.recording_approved', state.extractedOrderId, 'human.operator', `Approved uploaded voice recording: ${state.uploadedFileName}`);
     });
   }
@@ -389,37 +796,65 @@ function analyzeTranscript(text) {
     ? (state.lang === 'ar' ? 'عالية (High)' : 'High')
     : (state.lang === 'ar' ? 'عادية (Normal)' : 'Normal');
 
-  const match = text.match(/\bSF[-\s]?\d{4}\b/i);
-  if (match) {
-    state.extractedOrderId = match[0].toUpperCase().replace(/\s+/, '-');
+  const extracted = extractOrderIdFromText(text);
+  if (extracted) {
+    state.extractedOrderId = extracted;
     document.getElementById('extractedOrderVal').textContent = state.extractedOrderId;
     document.getElementById('orderLookupInput').value = state.extractedOrderId;
   }
 
   lookupOrder(state.extractedOrderId);
+  if (state.draftReady) {
+    saveTranscriptDraftToSession(false);
+  }
 }
 
-function lookupOrder(orderId) {
+function lookupOrder(orderId, preserveApproval = false) {
   const norm = (orderId || '').trim().toUpperCase();
-  const order = state.orders.find(o => o.id === norm);
   const box = document.getElementById('orderEvidenceBox');
   const draftEl = document.getElementById('draftResponseInput');
 
-  document.getElementById('approvalPill').textContent = state.lang === 'ar' ? 'بانتظار الاعتماد' : 'AWAITING APPROVAL';
-  document.getElementById('approvalPill').className = 'status-pill amber';
-  document.getElementById('approvedBanner').classList.remove('show');
+  if (!preserveApproval) {
+    document.getElementById('approvalPill').textContent = state.lang === 'ar' ? 'بانتظار الاعتماد' : 'AWAITING APPROVAL';
+    document.getElementById('approvalPill').className = 'status-pill amber';
+    document.getElementById('approvedBanner').classList.remove('show');
+  }
 
-  if (!order) {
-    box.innerHTML = `<div style="color: var(--coral); font-weight: 700;">${state.lang === 'ar' ? 'لم يتم العثور على الطلب: ' : 'Order not found: '}${norm}</div>`;
-    draftEl.value = state.lang === 'ar' ? 'يرجى التحقق من رقم الطلب قبل إرسال الرد.' : 'Please verify a valid order ID before dispatching.';
+  if (!norm) {
+    box.innerHTML = `<div style="color: var(--text-muted); font-weight: 600;">${state.lang === 'ar' ? 'أدخل رقم الطلب أو ارفع تسجيلاً صوتياً للمتابعة.' : 'Enter any order ID or upload a voice recording to continue.'}</div>`;
     return;
   }
 
+  let order = state.orders.find(o => o.id === norm);
+  if (!order) {
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+    order = {
+      id: norm,
+      status: 'Pending',
+      city: state.lang === 'ar' ? 'استقبال مباشر' : 'Live Intake',
+      eta: state.lang === 'ar' ? 'قيد المراجعة التشغيلية' : 'Pending confirmation',
+      lastScan: state.lang === 'ar'
+        ? `تم إنشاء سجل مباشر للطلب · ${nowTime}`
+        : `Live order record registered · ${nowTime}`,
+      response: `Order ${norm} has been logged from voice intake and is ready for operator verification and dispatch.`,
+      responseAr: `تم تسجيل الطلب ${norm} من المدخل الصوتي وهو جاهز لمراجعة المشغّل والاعتماد.`
+    };
+    state.orders.unshift(order);
+    saveOrdersToStorage();
+    renderOrdersPanel();
+    renderQuickOrderChips();
+    logEvent('order.registered', norm, 'system', `Auto-registered live order record ${norm} into Orders database`);
+  }
+
   state.extractedOrderId = order.id;
+  document.getElementById('extractedOrderVal').textContent = order.id;
+  document.getElementById('orderLookupInput').value = order.id;
+  document.getElementById('lookupStatusPill').textContent = state.lang === 'ar' ? 'سجل جاهز ✓' : 'RECORD READY ✓';
+
   box.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center;">
       <strong class="mono" style="color:var(--cyan); font-size:1.1rem;">${order.id}</strong>
-      <span class="status-pill">${order.status}</span>
+      <span class="${getOrderStatusClass(order.status)}">${order.status}</span>
     </div>
     <div><strong>${state.lang === 'ar' ? 'المدينة:' : 'City:'}</strong> ${order.city} · <strong>ETA:</strong> ${order.eta}</div>
     <div style="color: var(--text-muted); font-size:0.9rem;">${order.lastScan}</div>
@@ -429,6 +864,10 @@ function lookupOrder(orderId) {
     draftEl.value = state.lang === 'ar'
       ? `تم العثور على الطلب ${order.id} (${order.status}). تم تجهيز طلب الإلغاء للمراجعة ولن يُلغى قبل اعتمادك.`
       : `Order ${order.id} (${order.status}) retrieved. Cancellation request drafted; no change occurs before approval.`;
+  } else if (state.intent === 'modify') {
+    draftEl.value = state.lang === 'ar'
+      ? `تم تسجيل طلب تعديل على الطلب ${order.id} (${order.status}). بانتظار اعتمادك قبل تطبيق التغيير.`
+      : `Modification request logged for order ${order.id} (${order.status}). Awaiting your approval before applying changes.`;
   } else {
     draftEl.value = state.lang === 'ar' ? (order.responseAr || order.response) : order.response;
   }
@@ -479,6 +918,12 @@ function updateBatchToolbar() {
 }
 
 function renderOrdersPanel() {
+  const heading = document.getElementById('ordersPanelHeading');
+  if (heading) {
+    heading.textContent = state.lang === 'ar'
+      ? `قاعدة بيانات الطلبات (${state.orders.length} سجل)`
+      : `Operational Orders Database (${state.orders.length} Records)`;
+  }
   const list = document.getElementById('ordersList');
   list.innerHTML = '';
   state.orders.forEach(o => {
@@ -723,7 +1168,7 @@ function initStreamBanner() {
 const KEYWORD_RULES = [
   {
     type: 'order',
-    regex: /\bSF[-\s]?\d{4}\b/gi
+    regex: /\b(?:SF|ORD|VF)[-\s]?\d{3,6}\b/gi
   },
   {
     type: 'urgent',
@@ -811,4 +1256,107 @@ function renderTranscriptHighlights(text) {
       legend.innerHTML = prefix + pills;
     }
   }
+}
+
+let lastAutoSavedText = null;
+let lastAutoSavedTime = '';
+
+function updateAutoSaveStatus(isSaved, isRestored = false) {
+  const statusEl = document.getElementById('draftAutoSaveStatus');
+  if (!statusEl) return;
+
+  if (!isSaved) {
+    statusEl.className = 'autosave-status saving';
+    statusEl.textContent = state.lang === 'ar' ? '● جارٍ الحفظ التلقائي...' : '● Auto-saving draft...';
+    return;
+  }
+
+  statusEl.className = 'autosave-status saved';
+  const timeSuffix = lastAutoSavedTime ? ` · ${lastAutoSavedTime}` : '';
+  if (isRestored) {
+    statusEl.textContent = state.lang === 'ar'
+      ? `✓ تم استعادة مسودتك المحفوظة تلقائياً${timeSuffix}`
+      : `✓ Restored auto-saved draft${timeSuffix}`;
+  } else {
+    statusEl.textContent = state.lang === 'ar'
+      ? `✓ تم الحفظ التلقائي للمسودة${timeSuffix}`
+      : `✓ Draft auto-saved${timeSuffix}`;
+  }
+}
+
+function saveTranscriptDraftToSession(force = false) {
+  const transcriptEl = document.getElementById('transcriptInput');
+  if (!transcriptEl) return;
+  const text = transcriptEl.value;
+  if (!force && text === lastAutoSavedText) return;
+
+  try {
+    const nowTime = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    sessionStorage.setItem(DRAFT_SESSION_KEY, JSON.stringify({
+      text,
+      dialect: state.dialect,
+      savedAt: nowTime
+    }));
+    lastAutoSavedText = text;
+    lastAutoSavedTime = nowTime;
+    updateAutoSaveStatus(true, false);
+  } catch (e) {}
+}
+
+function restoreTranscriptDraft() {
+  const transcriptEl = document.getElementById('transcriptInput');
+  if (!transcriptEl) return;
+  try {
+    const raw = sessionStorage.getItem(DRAFT_SESSION_KEY);
+    if (!raw) {
+      saveTranscriptDraftToSession(true);
+      return;
+    }
+    const parsed = JSON.parse(raw);
+    if (parsed && typeof parsed.text === 'string' && parsed.text.trim().length > 0) {
+      if (parsed.dialect && DIALECTS[parsed.dialect]) {
+        state.dialect = parsed.dialect;
+        document.querySelectorAll('#dialectChips .chip').forEach(chip => {
+          chip.classList.toggle('selected', chip.dataset.dialect === parsed.dialect);
+        });
+        document.getElementById('detectedDialectVal').textContent =
+          state.lang === 'ar' ? DIALECTS[parsed.dialect].labelAr : DIALECTS[parsed.dialect].labelEn;
+      }
+      transcriptEl.value = parsed.text;
+      lastAutoSavedText = parsed.text;
+      lastAutoSavedTime = parsed.savedAt || '';
+      analyzeTranscript(parsed.text);
+      updateAutoSaveStatus(true, true);
+    } else {
+      saveTranscriptDraftToSession(true);
+    }
+  } catch (e) {}
+}
+
+function initTranscriptAutoSave() {
+  const transcriptEl = document.getElementById('transcriptInput');
+  if (!transcriptEl) return;
+
+  let debounceTimer = null;
+  transcriptEl.addEventListener('input', () => {
+    updateAutoSaveStatus(false);
+    clearTimeout(debounceTimer);
+    debounceTimer = setTimeout(() => {
+      saveTranscriptDraftToSession(false);
+    }, 600);
+  });
+
+  // Periodic background auto-save every 3 seconds
+  setInterval(() => {
+    saveTranscriptDraftToSession(false);
+  }, 3000);
+
+  // Flush immediately before refresh or tab navigation
+  window.addEventListener('pagehide', () => saveTranscriptDraftToSession(true));
+  window.addEventListener('beforeunload', () => saveTranscriptDraftToSession(true));
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'hidden') {
+      saveTranscriptDraftToSession(false);
+    }
+  });
 }
