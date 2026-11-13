@@ -40,6 +40,7 @@ let state = {
   auditLogs: [],
   uploadedFileName: null,
   isAudioApproved: false,
+  isAudioPlaying: false,
   isRecording: false,
   mediaRecorder: null,
   audioChunks: []
@@ -53,6 +54,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initDropzone();
   initRecorder();
   initActions();
+  initStreamBanner();
   setDialect('gulf');
   logEvent('system.startup', null, 'system', 'SawtFlow Studio initialized with 11 operational order records');
   renderHistory();
@@ -162,6 +164,7 @@ function initDropzone() {
 function handleAudioFile(file) {
   state.uploadedFileName = file.name;
   state.isAudioApproved = false;
+  state.isAudioPlaying = false;
   const sizeKB = Math.max(1, Math.round(file.size / 1024));
   document.getElementById('uploadedFileName').textContent = file.name;
   document.getElementById('uploadedFileSize').textContent = sizeKB > 1024 ? `${(sizeKB / 1024).toFixed(1)} MB` : `${sizeKB} KB`;
@@ -207,6 +210,7 @@ function initRecorder() {
         };
         state.mediaRecorder.start();
         state.isRecording = true;
+        updateStreamBadge();
         btn.textContent = state.lang === 'ar' ? '⏹ إيقاف التسجيل' : '⏹ Stop Recording';
         document.getElementById('audioStatusPill').textContent = state.lang === 'ar' ? 'جارٍ التسجيل...' : 'RECORDING...';
       } catch (err) {
@@ -222,6 +226,7 @@ function initRecorder() {
     } else {
       state.mediaRecorder.stop();
       state.isRecording = false;
+      updateStreamBadge();
       btn.textContent = state.lang === 'ar' ? '🎙️ تسجيل صوتي' : '🎙️ Record Voice';
     }
   });
@@ -274,12 +279,27 @@ function initActions() {
   const audioPlayerBox = document.getElementById('audioPlayerBox');
   if (audioPreview && audioPlayerBox) {
     const setPlaying = (playing) => {
+      state.isAudioPlaying = playing;
       audioPlayerBox.classList.toggle('is-playing', playing);
     };
     audioPreview.addEventListener('play', () => setPlaying(true));
     audioPreview.addEventListener('pause', () => setPlaying(false));
     audioPreview.addEventListener('ended', () => setPlaying(false));
     audioPreview.addEventListener('emptied', () => setPlaying(false));
+  }
+
+  const transcriptEl = document.getElementById('transcriptInput');
+  const backdropEl = document.getElementById('transcriptBackdrop');
+  if (transcriptEl) {
+    transcriptEl.addEventListener('input', () => {
+      renderTranscriptHighlights(transcriptEl.value);
+    });
+    if (backdropEl) {
+      transcriptEl.addEventListener('scroll', () => {
+        backdropEl.scrollTop = transcriptEl.scrollTop;
+        backdropEl.scrollLeft = transcriptEl.scrollLeft;
+      });
+    }
   }
 
   document.getElementById('historySearchInput').addEventListener('input', renderHistory);
@@ -291,6 +311,7 @@ function initActions() {
 }
 
 function analyzeTranscript(text) {
+  renderTranscriptHighlights(text);
   const lower = text.toLowerCase();
   if (lower.includes('cancel') || text.includes('ألغي') || text.includes('إلغاء') || text.includes('الغاء')) {
     state.intent = 'cancel';
@@ -484,4 +505,207 @@ function logEvent(type, orderId, actor, details) {
     `;
     container.appendChild(div);
   });
+}
+
+function updateStreamBadge() {
+  const dot = document.getElementById('studioStreamDot');
+  const label = document.getElementById('studioStreamLabel');
+  if (!dot || !label) return;
+  if (state.isRecording) {
+    dot.classList.add('recording');
+    label.textContent = 'LIVE RECORDING';
+  } else {
+    dot.classList.remove('recording');
+    label.textContent = 'AUDIO INTELLIGENCE STREAM';
+  }
+}
+
+function initStreamBanner() {
+  const canvas = document.getElementById('studioStreamCanvas');
+  if (!canvas) return;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return;
+
+  const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  let phase = 0;
+  let lastTime = performance.now();
+
+  function resize() {
+    const rect = canvas.getBoundingClientRect();
+    if (!rect.width || !rect.height) return;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    canvas.width = Math.round(rect.width * dpr);
+    canvas.height = Math.round(rect.height * dpr);
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  }
+
+  function draw(now) {
+    const dt = Math.min(0.05, (now - lastTime) / 1000);
+    lastTime = now;
+    if (!prefersReduced) {
+      phase = (phase + dt * Math.PI) % (Math.PI * 2);
+    }
+
+    const width = canvas.clientWidth;
+    const height = canvas.clientHeight;
+    if (width > 0 && height > 0) {
+      const centerY = height / 2;
+      ctx.clearRect(0, 0, width, height);
+
+      // Background orbit arc
+      ctx.save();
+      ctx.beginPath();
+      ctx.strokeStyle = 'rgba(56, 216, 255, 0.15)';
+      ctx.lineWidth = 2;
+      ctx.lineCap = 'round';
+      ctx.ellipse(
+        width * 0.5,
+        10 + height * 0.45,
+        width * 0.4,
+        height * 0.45,
+        0,
+        (-20 * Math.PI) / 180,
+        (180 * Math.PI) / 180
+      );
+      ctx.stroke();
+      ctx.restore();
+
+      // Animated wave path
+      const points = 60;
+      const factor = (state.isRecording || state.isAudioPlaying) ? 1.5 : 0.8;
+      ctx.save();
+      ctx.beginPath();
+      ctx.strokeStyle = '#38D8FF';
+      ctx.lineWidth = 3;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
+      for (let i = 0; i <= points; i++) {
+        const x = (width / points) * i;
+        const y = centerY + Math.sin(i * 0.25 + phase) * (18 * factor) * Math.sin((i / points) * Math.PI);
+        if (i === 0) ctx.moveTo(x, y);
+        else ctx.lineTo(x, y);
+      }
+      ctx.stroke();
+      ctx.restore();
+
+      // Verified amber node
+      const nodeX = width * 0.82;
+      const nodeY = centerY - 14;
+      ctx.beginPath();
+      ctx.fillStyle = 'rgba(255, 177, 68, 0.3)';
+      ctx.arc(nodeX, nodeY, 14, 0, Math.PI * 2);
+      ctx.fill();
+
+      ctx.beginPath();
+      ctx.fillStyle = '#FFB144';
+      ctx.arc(nodeX, nodeY, 6, 0, Math.PI * 2);
+      ctx.fill();
+    }
+
+    if (!prefersReduced) {
+      requestAnimationFrame(draw);
+    }
+  }
+
+  resize();
+  if ('ResizeObserver' in window) {
+    new ResizeObserver(resize).observe(canvas);
+  } else {
+    window.addEventListener('resize', resize);
+  }
+  updateStreamBadge();
+  requestAnimationFrame(draw);
+}
+
+const KEYWORD_RULES = [
+  {
+    type: 'order',
+    regex: /\bSF[-\s]?\d{4}\b/gi
+  },
+  {
+    type: 'urgent',
+    regex: /(?:\b(?:cancel|cancellation|cancelled|urgent|immediately|complaint|issue|refund)\b|إلغاء|الغاء|ألغي|الغي|إرجاع|استرجاع|شكوى|عاجل|فوراً|مشكلة)/gi
+  },
+  {
+    type: 'business',
+    regex: /(?:\b(?:order|orders|delivery|deliver|arrive|arriving|shipment|shipped|delayed|delay|status|details|tracking|track|modify|change|invoice|payment|schedule)\b|الطلبية|طلبية|طلبي|الطلب|طلب|التوصيل|توصيل|بيوصل|يوصل|تصل|وصل|الشحنة|شحنة|متأخرة|تأخر|حالة|تفاصيل|الموعد|موعد|العنوان|عنوان|الدفع|دفع|فاتورة|تعديل|تغيير|تبديل)/gi
+  }
+];
+
+function escapeHtml(str) {
+  return str
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function renderTranscriptHighlights(text) {
+  const container = document.getElementById('transcriptHighlights');
+  const legend = document.getElementById('transcriptKeywordsLegend');
+  if (!container) return;
+
+  const value = text || '';
+  const matches = [];
+
+  KEYWORD_RULES.forEach(rule => {
+    const rx = new RegExp(rule.regex.source, rule.regex.flags);
+    let m;
+    while ((m = rx.exec(value)) !== null) {
+      if (m[0].length === 0) break;
+      matches.push({ start: m.index, end: m.index + m[0].length, type: rule.type, word: m[0] });
+    }
+  });
+
+  // Sort by start index, longest match first on ties, and remove overlaps
+  matches.sort((a, b) => a.start - b.start || (b.end - b.start) - (a.end - a.start));
+  const filtered = [];
+  let cursor = 0;
+  for (const item of matches) {
+    if (item.start >= cursor) {
+      filtered.push(item);
+      cursor = item.end;
+    }
+  }
+
+  let html = '';
+  let pos = 0;
+  const seenWords = new Map();
+  for (const item of filtered) {
+    if (item.start > pos) {
+      html += escapeHtml(value.slice(pos, item.start));
+    }
+    html += `<mark class="kw-${item.type}">${escapeHtml(value.slice(item.start, item.end))}</mark>`;
+    pos = item.end;
+    const key = `${item.type}:${item.word.toLowerCase()}`;
+    if (!seenWords.has(key)) {
+      seenWords.set(key, { type: item.type, word: item.word });
+    }
+  }
+  if (pos < value.length) {
+    html += escapeHtml(value.slice(pos));
+  }
+  if (value.endsWith('\n')) {
+    html += ' ';
+  }
+
+  container.innerHTML = html || '&nbsp;';
+
+  if (legend) {
+    if (seenWords.size === 0) {
+      legend.innerHTML = `<span style="font-size:0.76rem; color:var(--text-muted);">${
+        state.lang === 'ar'
+          ? 'سيتم تمييز كلمات الطلب والتوصيل والإلغاء تلقائياً هنا.'
+          : 'Order IDs, delivery, and cancellation keywords highlight automatically.'
+      }</span>`;
+    } else {
+      const prefix = `<span style="font-size:0.74rem; color:var(--text-muted);">${
+        state.lang === 'ar' ? 'الكلمات المميزة:' : 'Highlighted:'
+      }</span>`;
+      const pills = Array.from(seenWords.values())
+        .map(item => `<span class="kw-pill ${item.type}">${escapeHtml(item.word)}</span>`)
+        .join('');
+      legend.innerHTML = prefix + pills;
+    }
+  }
 }

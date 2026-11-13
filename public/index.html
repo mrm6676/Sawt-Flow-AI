@@ -125,7 +125,47 @@
       font-size: 1.2rem;
       color: var(--text-muted);
       max-width: 720px;
-      margin-bottom: 2.5rem;
+      margin-bottom: 2rem;
+    }
+    .stream-banner {
+      position: relative;
+      width: 100%;
+      max-width: 760px;
+      height: 110px;
+      border-radius: 16px;
+      background: var(--navy-card);
+      border: 1px solid rgba(56, 216, 255, 0.25);
+      overflow: hidden;
+      margin-bottom: 2.25rem;
+      box-shadow: 0 8px 30px rgba(7, 20, 45, 0.45);
+    }
+    .stream-banner canvas {
+      display: block;
+      width: 100%;
+      height: 100%;
+    }
+    .stream-badge {
+      position: absolute;
+      top: 14px;
+      left: 16px;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      pointer-events: none;
+    }
+    .stream-dot {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan);
+      box-shadow: 0 0 8px rgba(56, 216, 255, 0.75);
+    }
+    .stream-label {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 0.7rem;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      color: rgba(255, 255, 255, 0.85);
     }
     .cta-group {
       display: flex;
@@ -390,6 +430,14 @@
       SawtFlow يفهم اللهجات العربية العامية، ويحوّل المحادثات الصوتية المعقدة إلى تفريغ صوتي دقيق، وتحليل فوري للنية، وإجراءات تشغيلية معتمدة عبر Gemini 3.8 Flash وقاعدة بيانات Room.
     </p>
 
+    <div class="stream-banner" aria-label="Audio Intelligence Stream">
+      <canvas id="heroStreamCanvas"></canvas>
+      <div class="stream-badge" dir="ltr">
+        <span class="stream-dot"></span>
+        <span class="stream-label">AUDIO INTELLIGENCE STREAM</span>
+      </div>
+    </div>
+
     <div class="cta-group">
       <a href="/studio/" class="btn btn-primary">
         تشغيل استوديو SawtFlow ←
@@ -519,6 +567,95 @@
             window.location.href = mailtoUrl;
           }
         });
+      }
+
+      const streamCanvas = document.getElementById('heroStreamCanvas');
+      if (streamCanvas) {
+        const ctx = streamCanvas.getContext('2d');
+        const prefersReduced = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        let phase = 0;
+        let lastTime = performance.now();
+
+        const resizeStream = () => {
+          const rect = streamCanvas.getBoundingClientRect();
+          if (!rect.width || !rect.height) return;
+          const dpr = Math.min(window.devicePixelRatio || 1, 2);
+          streamCanvas.width = Math.round(rect.width * dpr);
+          streamCanvas.height = Math.round(rect.height * dpr);
+          ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+        };
+
+        const drawStream = (now) => {
+          const dt = Math.min(0.05, (now - lastTime) / 1000);
+          lastTime = now;
+          if (!prefersReduced) {
+            phase = (phase + dt * Math.PI) % (Math.PI * 2);
+          }
+
+          const width = streamCanvas.clientWidth;
+          const height = streamCanvas.clientHeight;
+          if (width > 0 && height > 0) {
+            const centerY = height / 2;
+            ctx.clearRect(0, 0, width, height);
+
+            ctx.save();
+            ctx.beginPath();
+            ctx.strokeStyle = 'rgba(56, 216, 255, 0.15)';
+            ctx.lineWidth = 2;
+            ctx.lineCap = 'round';
+            ctx.ellipse(
+              width * 0.5,
+              10 + height * 0.45,
+              width * 0.4,
+              height * 0.45,
+              0,
+              (-20 * Math.PI) / 180,
+              (180 * Math.PI) / 180
+            );
+            ctx.stroke();
+            ctx.restore();
+
+            const points = 60;
+            ctx.save();
+            ctx.beginPath();
+            ctx.strokeStyle = '#38D8FF';
+            ctx.lineWidth = 3;
+            ctx.lineCap = 'round';
+            ctx.lineJoin = 'round';
+            for (let i = 0; i <= points; i++) {
+              const x = (width / points) * i;
+              const y = centerY + Math.sin(i * 0.25 + phase) * 14.4 * Math.sin((i / points) * Math.PI);
+              if (i === 0) ctx.moveTo(x, y);
+              else ctx.lineTo(x, y);
+            }
+            ctx.stroke();
+            ctx.restore();
+
+            const nodeX = width * 0.82;
+            const nodeY = centerY - 14;
+            ctx.beginPath();
+            ctx.fillStyle = 'rgba(255, 177, 68, 0.3)';
+            ctx.arc(nodeX, nodeY, 14, 0, Math.PI * 2);
+            ctx.fill();
+
+            ctx.beginPath();
+            ctx.fillStyle = '#FFB144';
+            ctx.arc(nodeX, nodeY, 6, 0, Math.PI * 2);
+            ctx.fill();
+          }
+
+          if (!prefersReduced) {
+            requestAnimationFrame(drawStream);
+          }
+        };
+
+        resizeStream();
+        if ('ResizeObserver' in window) {
+          new ResizeObserver(resizeStream).observe(streamCanvas);
+        } else {
+          window.addEventListener('resize', resizeStream);
+        }
+        requestAnimationFrame(drawStream);
       }
     });
   </script>

@@ -77,9 +77,15 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.text.AnnotatedString
+import androidx.compose.ui.text.SpanStyle
+import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.buildAnnotatedString
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.text.input.OffsetMapping
+import androidx.compose.ui.text.input.TransformedText
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.sawtflow.ui.theme.CairoFontFamily
@@ -710,11 +716,12 @@ fun StudioScreen(
                     }
                 }
 
-                // Transcript editor box
+                // Transcript editor box with automatic business/order keyword highlighting
                 OutlinedTextField(
                     value = state.transcriptText,
                     onValueChange = { viewModel.updateTranscript(it) },
                     readOnly = !state.isEditingTranscript,
+                    visualTransformation = remember { TranscriptKeywordVisualTransformation },
                     textStyle = TextStyle(
                         fontFamily = CairoFontFamily,
                         fontSize = 15.sp,
@@ -743,6 +750,25 @@ fun StudioScreen(
                         }
                     }
                 )
+
+                // Keyword highlight legend
+                FlowRow(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalArrangement = Arrangement.spacedBy(6.dp)
+                ) {
+                    HighlightLegendChip(
+                        label = if (isAr) "رقم الطلب" else "Order ID",
+                        color = CyanAccent
+                    )
+                    HighlightLegendChip(
+                        label = if (isAr) "طلبية / توصيل" else "Order / Delivery",
+                        color = AmberAccent
+                    )
+                    HighlightLegendChip(
+                        label = if (isAr) "إلغاء / عاجل" else "Cancel / Urgent",
+                        color = Color(0xFFFF7A7A)
+                    )
+                }
 
                 if (state.historySaveMessage != null) {
                     Card(
@@ -1300,3 +1326,86 @@ fun StudioScreen(
         }
     }
 }
+
+private object TranscriptKeywordVisualTransformation : VisualTransformation {
+    private val orderIdRegex = Regex("\\bSF[-\\s]?\\d{4}\\b", RegexOption.IGNORE_CASE)
+    private val urgentRegex = Regex(
+        "(?:\\b(?:cancel|cancellation|cancelled|urgent|immediately|complaint|issue|refund)\\b|إلغاء|الغاء|ألغي|الغي|إرجاع|استرجاع|شكوى|عاجل|فوراً|مشكلة)",
+        RegexOption.IGNORE_CASE
+    )
+    private val businessRegex = Regex(
+        "(?:\\b(?:order|orders|delivery|deliver|arrive|arriving|shipment|shipped|delayed|delay|status|details|tracking|track|modify|change|invoice|payment|schedule)\\b|الطلبية|طلبية|طلبي|الطلب|طلب|التوصيل|توصيل|بيوصل|يوصل|تصل|وصل|الشحنة|شحنة|متأخرة|تأخر|حالة|تفاصيل|الموعد|موعد|العنوان|عنوان|الدفع|دفع|فاتورة|تعديل|تغيير|تبديل)",
+        RegexOption.IGNORE_CASE
+    )
+
+    override fun filter(text: AnnotatedString): TransformedText {
+        val raw = text.text
+        val styled = buildAnnotatedString {
+            append(raw)
+            orderIdRegex.findAll(raw).forEach { match ->
+                addStyle(
+                    style = SpanStyle(
+                        color = CyanAccent,
+                        fontWeight = FontWeight.Bold,
+                        background = CyanAccent.copy(alpha = 0.16f)
+                    ),
+                    start = match.range.first,
+                    end = match.range.last + 1
+                )
+            }
+            businessRegex.findAll(raw).forEach { match ->
+                addStyle(
+                    style = SpanStyle(
+                        color = AmberAccent,
+                        fontWeight = FontWeight.Bold,
+                        background = AmberAccent.copy(alpha = 0.16f)
+                    ),
+                    start = match.range.first,
+                    end = match.range.last + 1
+                )
+            }
+            urgentRegex.findAll(raw).forEach { match ->
+                addStyle(
+                    style = SpanStyle(
+                        color = Color(0xFFFF8A8A),
+                        fontWeight = FontWeight.Bold,
+                        background = Color(0xFFFF5252).copy(alpha = 0.22f)
+                    ),
+                    start = match.range.first,
+                    end = match.range.last + 1
+                )
+            }
+        }
+        return TransformedText(styled, OffsetMapping.Identity)
+    }
+}
+
+@Composable
+private fun HighlightLegendChip(
+    label: String,
+    color: Color
+) {
+    Row(
+        modifier = Modifier
+            .clip(RoundedCornerShape(999.dp))
+            .background(color.copy(alpha = 0.12f))
+            .border(1.dp, color.copy(alpha = 0.35f), RoundedCornerShape(999.dp))
+            .padding(horizontal = 8.dp, vertical = 3.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(5.dp)
+    ) {
+        Box(
+            modifier = Modifier
+                .size(6.dp)
+                .clip(CircleShape)
+                .background(color)
+        )
+        Text(
+            text = label,
+            color = color,
+            fontSize = 11.sp,
+            fontWeight = FontWeight.SemiBold
+        )
+    }
+}
+

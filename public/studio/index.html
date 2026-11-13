@@ -52,6 +52,15 @@
     <section class="panel active" id="panel-studio">
       <div class="step-stack">
 
+        <!-- AUDIO INTELLIGENCE STREAM BANNER -->
+        <div class="stream-banner" id="studioStreamBanner" aria-label="Audio Intelligence Stream">
+          <canvas id="studioStreamCanvas"></canvas>
+          <div class="stream-badge" dir="ltr">
+            <span class="stream-dot" id="studioStreamDot"></span>
+            <span class="stream-label mono" id="studioStreamLabel">AUDIO INTELLIGENCE STREAM</span>
+          </div>
+        </div>
+
         <!-- STEP 1: INPUT -->
         <article class="step-card">
           <div class="step-top">
@@ -123,7 +132,13 @@
             راجع نص المحادثة المفرّغ، عدّله عند الحاجة، واحفظه في السجل المحلي.
           </p>
 
-          <textarea id="transcriptInput" class="textarea" rows="3"></textarea>
+          <div class="transcript-editor-wrap">
+            <div class="transcript-backdrop" id="transcriptBackdrop" aria-hidden="true">
+              <div class="transcript-highlights" id="transcriptHighlights"></div>
+            </div>
+            <textarea id="transcriptInput" class="textarea transcript-textarea" rows="3" spellcheck="false"></textarea>
+          </div>
+          <div class="kw-legend" id="transcriptKeywordsLegend" aria-live="polite"></div>
 
           <div class="btn-row">
             <button class="btn btn-cyan" id="analyzeBtn" type="button" data-ar="تحليل النية واستخراج الطلب ←" data-en="Analyze Intent & Extract Order →">
