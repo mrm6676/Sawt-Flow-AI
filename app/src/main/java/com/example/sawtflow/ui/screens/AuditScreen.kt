@@ -62,8 +62,7 @@ fun AuditScreen(
         Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
             Text(
                 text = if (isAr) "سجل التدقيق والامتثال / التحكم البشري" else "AUDIT TRAIL & GOVERNANCE / HUMAN-IN-THE-LOOP",
-                color = AmberAccent,
-                fontFamily = FontFamily.Monospace,
+                color = Color.White,
                 fontSize = 11.sp,
                 fontWeight = FontWeight.Bold,
                 letterSpacing = 1.sp
@@ -79,7 +78,7 @@ fun AuditScreen(
                     "كل بحث، تصحيح كلام، أو اعتماد إجراء يُسجّل بسياقه الكامل وفق سياسة عدم الإلغاء."
                 else
                     "Every lookup, speech correction, and human response approval is immutably recorded.",
-                color = Color.White.copy(alpha = 0.7f),
+                color = Color.White,
                 fontSize = 13.sp
             )
         }
@@ -158,7 +157,7 @@ fun AuditLogCard(
                                 when {
                                     entry.eventType.contains("approved") -> GreenSuccess
                                     entry.eventType.contains("failed") -> Color(0xFFBA1A1A)
-                                    entry.eventType.contains("recorded") -> AmberAccent
+                                    entry.eventType.contains("recorded") -> Color(0xFF7A4B0A)
                                     else -> CyanAccent.copy(alpha = 0.25f)
                                 }
                             )
@@ -166,9 +165,8 @@ fun AuditLogCard(
                     ) {
                         Text(
                             text = entry.eventType,
-                            color = if (entry.eventType.contains("approved")) Color.White else CyanAccent,
+                            color = Color.White,
                             fontSize = 10.sp,
-                            fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -176,9 +174,8 @@ fun AuditLogCard(
                     entry.orderId?.let { orderId ->
                         Text(
                             text = "[$orderId]",
-                            color = AmberAccent,
+                            color = Color.White,
                             fontSize = 11.sp,
-                            fontFamily = FontFamily.Monospace,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -186,15 +183,14 @@ fun AuditLogCard(
 
                 Text(
                     text = entry.timestampFormatted,
-                    color = Color.White.copy(alpha = 0.5f),
-                    fontSize = 10.sp,
-                    fontFamily = FontFamily.Monospace
+                    color = Color.White,
+                    fontSize = 10.sp
                 )
             }
 
             Text(
                 text = entry.details,
-                color = Color.White.copy(alpha = 0.9f),
+                color = Color.White,
                 fontSize = 12.sp,
                 lineHeight = 17.sp
             )
@@ -205,15 +201,13 @@ fun AuditLogCard(
             ) {
                 Text(
                     text = "${if (isAr) "الفاعل" else "Actor"}: ${entry.actor}",
-                    color = Color.White.copy(alpha = 0.45f),
-                    fontSize = 10.sp,
-                    fontFamily = FontFamily.Monospace
+                    color = Color.White,
+                    fontSize = 10.sp
                 )
                 Text(
                     text = "ID: ${entry.id}",
-                    color = Color.White.copy(alpha = 0.35f),
-                    fontSize = 9.sp,
-                    fontFamily = FontFamily.Monospace
+                    color = Color.White,
+                    fontSize = 9.sp
                 )
             }
         }

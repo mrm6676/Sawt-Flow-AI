@@ -8,18 +8,24 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import com.example.sawtflow.R
 
-// Cairo: High-legibility modern Arabic and Latin hybrid font bundled locally
-val CairoFontFamily = FontFamily(
-    Font(R.font.cairo, FontWeight.Normal)
+// Tajawal: Modern Arabic and Latin font bundled locally
+val TajawalFontFamily = FontFamily(
+    Font(R.font.tajawal, FontWeight.ExtraLight),
+    Font(R.font.tajawal, FontWeight.Light),
+    Font(R.font.tajawal, FontWeight.Normal),
+    Font(R.font.tajawal, FontWeight.Medium),
+    Font(R.font.tajawal, FontWeight.SemiBold),
+    Font(R.font.tajawal, FontWeight.Bold),
+    Font(R.font.tajawal, FontWeight.ExtraBold),
+    Font(R.font.tajawal, FontWeight.Black)
 )
 
-// Outfit: Geometric contemporary display font bundled locally
-val OutfitFontFamily = FontFamily(
-    Font(R.font.outfit, FontWeight.Normal)
-)
+// Aliases preserved for existing imports across screens
+val CairoFontFamily = TajawalFontFamily
+val OutfitFontFamily = TajawalFontFamily
 
-// Default font family for SawtFlow application
-val SawtFlowFontFamily = CairoFontFamily
+// Default font family for Sound Flow application
+val SawtFlowFontFamily = TajawalFontFamily
 
 val SawtFlowTypography = Typography(
     displayLarge = TextStyle(

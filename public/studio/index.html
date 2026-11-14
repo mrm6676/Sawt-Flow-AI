@@ -3,19 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SawtFlow Studio | Arabic Voice Intelligence Workspace</title>
-  <meta name="description" content="SawtFlow Studio: مساحة عمل تفاعلية لتحويل التسجيلات الصوتية العربية إلى قرارات وإجراءات تجارية موثوقة." />
+  <title>Sound Flow Studio | Arabic & English Voice Intelligence</title>
+  <meta name="description" content="Sound Flow Studio: مساحة عمل تفاعلية لتحويل التسجيلات الصوتية العربية والإنجليزية إلى قرارات وإجراءات تجارية موثوقة." />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/studio/studio.css" />
 </head>
 <body>
   <header class="studio-header">
-    <a href="/" class="brand" aria-label="SawtFlow Home">
+    <a href="/" class="brand" aria-label="Sound Flow Home">
       <div class="brand-logo">
         <svg width="22" height="22" viewBox="0 0 40 40" fill="none">
           <circle cx="20" cy="20" r="18" stroke="#38D8FF" stroke-width="2" />
@@ -24,7 +24,7 @@
           <path d="M24 29L28 33L35 25" stroke="#FFB144" stroke-width="2.5" stroke-linecap="round" />
         </svg>
       </div>
-      <div class="brand-title">Sawt<span>Flow</span> Studio</div>
+      <div class="brand-title">Sound <span>Flow</span> Studio</div>
     </a>
 
     <div class="header-controls">
@@ -47,14 +47,14 @@
 
   <main class="container">
     <div class="studio-hero">
-      <div class="eyebrow" data-ar="استوديو SAWTFLOW / مساحة الذكاء الصوتي" data-en="SAWTFLOW STUDIO / VOICE INTELLIGENCE WORKSPACE">
-        استوديو SAWTFLOW / مساحة الذكاء الصوتي
+      <div class="eyebrow" data-ar="استوديو SOUND FLOW / مساحة الذكاء الصوتي" data-en="SOUND FLOW STUDIO / VOICE INTELLIGENCE WORKSPACE">
+        استوديو SOUND FLOW / مساحة الذكاء الصوتي
       </div>
-      <h1 data-ar="حوّل الصوت العربي إلى الإجراء الموثوق التالي." data-en="Turn Arabic voice into the next right action.">
-        حوّل الصوت العربي إلى الإجراء الموثوق التالي.
+      <h1 data-ar="حوّل الصوت العربي والإنجليزي إلى الإجراء الموثوق التالي." data-en="Turn Arabic & English voice into the next right action.">
+        حوّل الصوت العربي والإنجليزي إلى الإجراء الموثوق التالي.
       </h1>
-      <p data-ar="ارفع تسجيلاً صوتياً أو اختر لهجة عامية، صحّح النص، وحوّل نية العميل إلى رد معتمد وموثق." data-en="Upload or record a voice conversation, refine speech recognition, and turn customer intent into an approved business action.">
-        ارفع تسجيلاً صوتياً أو اختر لهجة عامية، صحّح النص، وحوّل نية العميل إلى رد معتمد وموثق.
+      <p data-ar="ارفع تسجيلاً صوتياً أو اختر لهجة، صحّح النص، وحوّل نية العميل إلى رد معتمد وموثق." data-en="Upload or record an Arabic or English conversation, refine speech recognition, and turn customer intent into an approved business action.">
+        ارفع تسجيلاً صوتياً أو اختر لهجة، صحّح النص، وحوّل نية العميل إلى رد معتمد وموثق.
       </p>
     </div>
 
@@ -151,6 +151,12 @@
             <button class="btn btn-amber" id="recordBtn" type="button" data-ar="🎙️ تسجيل صوتي" data-en="🎙️ Record Voice">
               🎙️ تسجيل صوتي
             </button>
+            <button class="btn btn-outline" id="loadEnglishSampleBtn" type="button" data-ar="🎧 تحميل عينة صوتية إنجليزية (WAV)" data-en="🎧 Load English Voice Sample (WAV)">
+              🎧 تحميل عينة صوتية إنجليزية (WAV)
+            </button>
+            <a class="btn btn-outline" id="downloadEnglishSampleLink" href="/studio/samples/en_order_SF-4420_inquiry.wav" download="en_order_SF-4420_inquiry.wav" data-ar="⬇ تنزيل عينة إنجليزية (.wav)" data-en="⬇ Download English Sample (.wav)">
+              ⬇ تنزيل عينة إنجليزية (.wav)
+            </a>
             <button class="btn btn-outline" id="loadSampleBtn" type="button" data-ar="تحميل عينة طلب SF-4420" data-en="Load SF-4420 Sample">
               تحميل عينة طلب SF-4420
             </button>
@@ -325,7 +331,7 @@
   </main>
 
   <footer>
-    <p>© 2026 SawtFlow AI — Arabic Voice Intelligence Studio · <a href="/" style="color: #38D8FF; text-decoration: none;">العودة للرئيسية</a></p>
+    <p>© 2026 Sound Flow AI — Arabic & English Voice Intelligence Studio · <a href="/" style="color: #FFFFFF; text-decoration: underline;">العودة للرئيسية</a></p>
   </footer>
 
   <script src="/studio/studio.js"></script>

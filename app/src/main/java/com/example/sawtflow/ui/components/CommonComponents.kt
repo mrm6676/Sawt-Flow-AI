@@ -48,6 +48,7 @@ import com.example.sawtflow.ui.theme.AmberAccent
 import com.example.sawtflow.ui.theme.CyanAccent
 import com.example.sawtflow.ui.theme.NavyCard
 import com.example.sawtflow.ui.theme.NavyPrimary
+import com.example.sawtflow.ui.theme.TajawalFontFamily
 
 @Composable
 fun SawtFlowHeader(
@@ -67,10 +68,10 @@ fun SawtFlowHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // SawtFlow Brand Logo
+            // Sound Flow Brand Logo
             Image(
                 painter = painterResource(id = R.drawable.ic_sawtflow_brand_logo),
-                contentDescription = "SawtFlow Brand Logo",
+                contentDescription = "Sound Flow Brand Logo",
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
@@ -78,7 +79,7 @@ fun SawtFlowHeader(
 
             Row {
                 Text(
-                    text = "Sawt",
+                    text = "Sound ",
                     color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
@@ -86,7 +87,7 @@ fun SawtFlowHeader(
                 )
                 Text(
                     text = "Flow",
-                    color = CyanAccent,
+                    color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
                     letterSpacing = (-0.5).sp
@@ -99,7 +100,7 @@ fun SawtFlowHeader(
             onClick = onToggleLanguage,
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = CyanAccent
+                contentColor = Color.White
             ),
             border = ButtonDefaults.outlinedButtonBorder.copy(
                 brush = Brush.horizontalGradient(listOf(CyanAccent, AmberAccent))
@@ -108,6 +109,7 @@ fun SawtFlowHeader(
         ) {
             Text(
                 text = if (currentLanguage == AppLanguage.EN) "عربي" else "EN",
+                color = Color.White,
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp
             )
@@ -203,9 +205,9 @@ fun AudioWaveformBanner(
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = if (isRecording) "LIVE RECORDING" else "AUDIO INTELLIGENCE STREAM",
-                color = Color.White.copy(alpha = 0.8f),
+                color = Color.White,
                 fontSize = 10.sp,
-                fontFamily = FontFamily.Monospace,
+                fontFamily = TajawalFontFamily,
                 fontWeight = FontWeight.Bold
             )
         }
@@ -225,8 +227,8 @@ fun StepBadge(
     ) {
         Text(
             text = indexText,
-            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-            fontFamily = FontFamily.Monospace,
+            color = Color.White,
+            fontFamily = TajawalFontFamily,
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp
@@ -243,8 +245,8 @@ fun StepBadge(
             )
             Text(
                 text = statusText,
-                color = statusColor,
-                fontFamily = FontFamily.Monospace,
+                color = Color.White,
+                fontFamily = TajawalFontFamily,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold
             )

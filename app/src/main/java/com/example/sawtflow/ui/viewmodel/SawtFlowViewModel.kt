@@ -692,17 +692,27 @@ class SawtFlowViewModel(
         )
     }
 
-    fun loadPresetAudio(fileName: String, sizeStr: String, textEn: String, textAr: String) {
+    fun loadPresetAudio(
+        fileName: String,
+        sizeStr: String,
+        textEn: String,
+        textAr: String,
+        uriString: String? = null,
+        durationStr: String = "00:18"
+    ) {
+        playbackJob?.cancel()
+        releaseMediaPlayer()
         val isAr = _uiState.value.language == AppLanguage.AR
         val transcript = if (isAr) textAr else textEn
         _uiState.value = _uiState.value.copy(
             uploadedAudioName = fileName,
             uploadedAudioSize = sizeStr,
-            uploadedAudioUri = null,
+            uploadedAudioUri = uriString,
             isUploadedAudioApproved = false,
             isPlayingAudio = false,
             playbackProgress = 0f,
             playbackPosition = "00:00",
+            playbackDuration = durationStr,
             transcriptText = transcript,
             audioStatusMessage = if (isAr) "تم تحميل العينة: $fileName" else "Preset audio sample loaded: $fileName",
             confidence = "98.2%",
@@ -729,7 +739,7 @@ class SawtFlowViewModel(
             isTranscribingWithGemini = true,
             geminiError = null,
             geminiSuccessMessage = null,
-            audioStatusMessage = if (isAr) "جارٍ إرسال التسجيل إلى Gemini للتعرف على الصوت العربي..." else "Sending audio to Gemini API for Arabic transcription..."
+            audioStatusMessage = if (isAr) "جارٍ إرسال التسجيل إلى Gemini للتفريغ الصوتي..." else "Sending audio to Gemini API for voice transcription..."
         )
 
         viewModelScope.launch {

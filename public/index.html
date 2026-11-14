@@ -3,14 +3,14 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>SawtFlow AI | Arabic Voice Intelligence</title>
-  <meta name="description" content="SawtFlow AI: ذكاء الصوت العربي لأتمتة الأعمال وتحويل المحادثات إلى إجراءات موثوقة." />
+  <title>Sound Flow AI | Arabic & English Voice Intelligence</title>
+  <meta name="description" content="Sound Flow AI: ذكاء الصوت العربي والإنجليزي لأتمتة الأعمال وتحويل المحادثات إلى إجراءات موثوقة." />
   <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
   <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Tajawal:wght@200;300;400;500;700;800;900&display=swap" rel="stylesheet">
   <style>
     :root {
       --navy-bg: #07142D;
@@ -21,14 +21,49 @@
       --amber: #FFB144;
       --green: #00E676;
       --text: #FFFFFF;
-      --text-muted: rgba(255, 255, 255, 0.7);
+      --text-muted: #FFFFFF;
+    }
+    .tajawal-extralight {
+      font-family: "Tajawal", sans-serif;
+      font-weight: 200;
+      font-style: normal;
+    }
+    .tajawal-light {
+      font-family: "Tajawal", sans-serif;
+      font-weight: 300;
+      font-style: normal;
+    }
+    .tajawal-regular {
+      font-family: "Tajawal", sans-serif;
+      font-weight: 400;
+      font-style: normal;
+    }
+    .tajawal-medium {
+      font-family: "Tajawal", sans-serif;
+      font-weight: 500;
+      font-style: normal;
+    }
+    .tajawal-bold {
+      font-family: "Tajawal", sans-serif;
+      font-weight: 700;
+      font-style: normal;
+    }
+    .tajawal-extrabold {
+      font-family: "Tajawal", sans-serif;
+      font-weight: 800;
+      font-style: normal;
+    }
+    .tajawal-black {
+      font-family: "Tajawal", sans-serif;
+      font-weight: 900;
+      font-style: normal;
     }
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html { scroll-behavior: smooth; }
     body {
       background-color: var(--navy-bg);
-      color: var(--text);
-      font-family: 'Cairo', 'Outfit', sans-serif;
+      color: #FFFFFF;
+      font-family: "Tajawal", sans-serif;
       min-height: 100vh;
       display: flex;
       flex-direction: column;
@@ -68,20 +103,21 @@
       font-size: 1.5rem;
       font-weight: 800;
       letter-spacing: -0.5px;
+      color: #FFFFFF;
     }
-    .brand-title span { color: var(--cyan); }
+    .brand-title span { color: #FFFFFF; }
     .badge-tag {
       background: rgba(56, 216, 255, 0.15);
-      color: var(--cyan);
+      color: #FFFFFF;
       padding: 0.35rem 0.85rem;
       border-radius: 20px;
       font-size: 0.85rem;
       font-weight: 600;
-      border: 1px solid rgba(56, 216, 255, 0.3);
+      border: 1px solid rgba(56, 216, 255, 0.35);
     }
     .lang-btn {
       background: var(--navy-card);
-      color: var(--cyan);
+      color: #FFFFFF;
       border: 1px solid rgba(56, 216, 255, 0.45);
       border-radius: 999px;
       padding: 0.45rem 1rem;
@@ -109,8 +145,8 @@
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      color: var(--cyan);
-      font-family: 'JetBrains Mono', monospace;
+      color: #FFFFFF;
+      font-family: "Tajawal", sans-serif;
       font-size: 0.85rem;
       font-weight: 700;
       letter-spacing: 1.5px;
@@ -118,7 +154,7 @@
       background: rgba(56, 216, 255, 0.08);
       padding: 0.4rem 1rem;
       border-radius: 30px;
-      border: 1px solid rgba(56, 216, 255, 0.2);
+      border: 1px solid rgba(56, 216, 255, 0.25);
     }
     .pulse-dot {
       width: 8px;
@@ -132,17 +168,17 @@
       font-weight: 800;
       margin-bottom: 1rem;
       line-height: 1.25;
+      color: #FFFFFF;
     }
     h1 em {
       font-style: normal;
-      color: var(--cyan);
-      background: linear-gradient(135deg, var(--cyan) 0%, var(--amber) 100%);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
+      color: #FFFFFF;
+      border-bottom: 3px solid var(--cyan);
+      padding-bottom: 2px;
     }
     .hero-lead {
       font-size: 1.2rem;
-      color: var(--text-muted);
+      color: #FFFFFF;
       max-width: 720px;
       margin-bottom: 2rem;
     }
@@ -180,11 +216,11 @@
       box-shadow: 0 0 8px rgba(56, 216, 255, 0.75);
     }
     .stream-label {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 0.7rem;
+      font-family: "Tajawal", sans-serif;
+      font-size: 0.72rem;
       font-weight: 700;
       letter-spacing: 0.06em;
-      color: rgba(255, 255, 255, 0.85);
+      color: #FFFFFF;
     }
     .cta-group {
       display: flex;
@@ -203,19 +239,21 @@
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
+      color: #FFFFFF;
     }
     .btn-primary {
-      background: var(--cyan);
-      color: var(--navy-bg);
-      box-shadow: 0 4px 20px rgba(56, 216, 255, 0.4);
+      background: #0C4E78;
+      color: #FFFFFF;
+      border: 1.5px solid var(--cyan);
+      box-shadow: 0 4px 20px rgba(56, 216, 255, 0.3);
     }
     .btn-primary:hover {
-      background: #7be5ff;
+      background: #12659B;
       transform: translateY(-2px);
     }
     .btn-secondary {
       background: var(--navy-card);
-      color: #fff;
+      color: #FFFFFF;
       border: 1px solid var(--navy-border);
     }
     .btn-secondary:hover {
@@ -227,7 +265,7 @@
       flex-direction: column;
       align-items: center;
       gap: 0.6rem;
-      color: var(--cyan);
+      color: #FFFFFF;
       text-decoration: none;
       font-size: 0.9rem;
       font-weight: 700;
@@ -237,7 +275,7 @@
       cursor: pointer;
     }
     .scroll-down-btn:hover {
-      color: #8debff;
+      color: #FFFFFF;
       transform: translateY(4px);
     }
     .scroll-indicator {
@@ -307,7 +345,7 @@
       color: #fff;
     }
     .card p {
-      color: var(--text-muted);
+      color: #FFFFFF;
       font-size: 0.95rem;
     }
     .contact-section {
@@ -323,10 +361,10 @@
       font-size: 1.5rem;
       font-weight: 800;
       margin-bottom: 0.4rem;
-      color: #fff;
+      color: #FFFFFF;
     }
     .contact-section .contact-sub {
-      color: var(--text-muted);
+      color: #FFFFFF;
       font-size: 0.95rem;
       margin-bottom: 1.5rem;
     }
@@ -345,7 +383,7 @@
       border: 1px solid var(--navy-border);
       border-radius: 10px;
       padding: 0.85rem 1rem;
-      color: #fff;
+      color: #FFFFFF;
       font-family: inherit;
       font-size: 0.95rem;
       outline: none;
@@ -355,11 +393,11 @@
       border-color: var(--cyan);
     }
     .contact-input::placeholder, .contact-textarea::placeholder {
-      color: rgba(255, 255, 255, 0.45);
+      color: rgba(255, 255, 255, 0.72);
     }
     .contact-submit {
       justify-self: start;
-      border: none;
+      border: 1.5px solid var(--cyan);
       cursor: pointer;
     }
     .contact-feedback {
@@ -369,7 +407,7 @@
       border-radius: 8px;
       background: rgba(0, 230, 118, 0.14);
       border: 1px solid var(--green);
-      color: var(--green);
+      color: #FFFFFF;
       font-size: 0.9rem;
       font-weight: 600;
     }
@@ -380,7 +418,7 @@
       border-top: 1px solid var(--navy-border);
       padding: 2.5rem 2rem;
       text-align: center;
-      color: var(--text-muted);
+      color: #FFFFFF;
       font-size: 0.9rem;
       background: rgba(7, 20, 45, 0.95);
     }
@@ -406,7 +444,7 @@
       border-radius: 999px;
       background: var(--navy-card);
       border: 1px solid var(--navy-border);
-      color: #fff;
+      color: #FFFFFF;
       text-decoration: none;
       font-size: 0.88rem;
       font-weight: 600;
@@ -414,7 +452,7 @@
     }
     .social-link:hover {
       border-color: var(--cyan);
-      color: var(--cyan);
+      color: #FFFFFF;
       transform: translateY(-2px);
     }
   </style>
@@ -430,7 +468,7 @@
           <path d="M24 29L28 33L35 25" stroke="#FFB144" stroke-width="2.5" stroke-linecap="round"/>
         </svg>
       </div>
-      <div class="brand-title">Sawt<span>Flow</span></div>
+      <div class="brand-title">Sound <span>Flow</span></div>
     </a>
     <div style="display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap;">
       <a href="/studio/" class="btn btn-primary" style="padding: 0.45rem 1rem; font-size: 0.88rem;" data-ar="افتح الاستوديو ←" data-en="Open Studio →">
@@ -443,11 +481,11 @@
 
   <main class="hero">
     <div class="hero-eyebrow">
-      <span class="pulse-dot"></span> ARABIC VOICE INTELLIGENCE
+      <span class="pulse-dot"></span> ARABIC & ENGLISH VOICE INTELLIGENCE
     </div>
-    <h1 id="heroHeadline" data-ar-html="الصوت العربي الذي يدير <em>أعمالك بدقة.</em>" data-en-html="The Arabic voice that runs <em>your business reliably.</em>">الصوت العربي الذي يدير <em>أعمالك بدقة.</em></h1>
-    <p class="hero-lead" data-ar="SawtFlow يفهم اللهجات العربية العامية، ويحوّل المحادثات الصوتية المعقدة إلى تفريغ صوتي دقيق، وتحليل فوري للنية، وإجراءات تشغيلية معتمدة عبر Gemini 3.8 Flash وقاعدة بيانات Room." data-en="SawtFlow understands colloquial Arabic dialects and transforms complex voice conversations into accurate speech transcripts, instant intent analysis, and approved operational actions powered by Gemini 3.8 Flash and local Room storage.">
-      SawtFlow يفهم اللهجات العربية العامية، ويحوّل المحادثات الصوتية المعقدة إلى تفريغ صوتي دقيق، وتحليل فوري للنية، وإجراءات تشغيلية معتمدة عبر Gemini 3.8 Flash وقاعدة بيانات Room.
+    <h1 id="heroHeadline" data-ar-html="الصوت العربي والإنجليزي الذي يدير <em>أعمالك بدقة.</em>" data-en-html="Arabic &amp; English voice that runs <em>your business reliably.</em>">الصوت العربي والإنجليزي الذي يدير <em>أعمالك بدقة.</em></h1>
+    <p class="hero-lead" data-ar="Sound Flow يفهم العربية ولهجاتها العامية وكذلك الإنجليزية، ويحوّل المحادثات الصوتية المعقدة إلى تفريغ صوتي دقيق، وتحليل فوري للنية، وإجراءات تشغيلية معتمدة عبر Gemini 3.8 Flash وقاعدة بيانات Room." data-en="Sound Flow understands Arabic dialects and English speech seamlessly, transforming voice conversations into accurate transcripts, instant intent analysis, and approved operational actions powered by Gemini 3.8 Flash and local Room storage.">
+      Sound Flow يفهم العربية ولهجاتها العامية وكذلك الإنجليزية، ويحوّل المحادثات الصوتية المعقدة إلى تفريغ صوتي دقيق، وتحليل فوري للنية، وإجراءات تشغيلية معتمدة عبر Gemini 3.8 Flash وقاعدة بيانات Room.
     </p>
 
     <div class="stream-banner" aria-label="Audio Intelligence Stream">
@@ -459,8 +497,8 @@
     </div>
 
     <div class="cta-group">
-      <a href="/studio/" class="btn btn-primary" data-ar="تشغيل استوديو SawtFlow ←" data-en="Launch SawtFlow Studio →">
-        تشغيل استوديو SawtFlow ←
+      <a href="/studio/" class="btn btn-primary" data-ar="تشغيل استوديو Sound Flow ←" data-en="Launch Sound Flow Studio →">
+        تشغيل استوديو Sound Flow ←
       </a>
       <a href="#features" class="btn btn-secondary" data-ar="استكشف المزايا والقدرات ↓" data-en="Explore Features ↓">
         استكشف المزايا والقدرات ↓
@@ -503,7 +541,7 @@
     </div>
     <section class="contact-section" id="contact">
       <h2 data-ar="تواصل معنا" data-en="Contact Us">تواصل معنا</h2>
-      <p class="contact-sub" data-ar="هل لديك استفسار حول أتمتة الصوت العربي أو التكامل مع أنظمتك؟ أرسل لنا رسالة مباشرة عبر البريد الإلكتروني." data-en="Have questions about Arabic voice automation or integrating with your systems? Send us a direct email message.">هل لديك استفسار حول أتمتة الصوت العربي أو التكامل مع أنظمتك؟ أرسل لنا رسالة مباشرة عبر البريد الإلكتروني.</p>
+      <p class="contact-sub" data-ar="هل لديك استفسار حول أتمتة الصوت العربي والإنجليزي أو التكامل مع أنظمتك؟ أرسل لنا رسالة مباشرة عبر البريد الإلكتروني." data-en="Have questions about Arabic & English voice automation or integrating with your systems? Send us a direct email message.">هل لديك استفسار حول أتمتة الصوت العربي والإنجليزي أو التكامل مع أنظمتك؟ أرسل لنا رسالة مباشرة عبر البريد الإلكتروني.</p>
       <form class="contact-form" id="contactForm">
         <div class="contact-row">
           <input type="email" id="contactEmail" class="contact-input" placeholder="البريد الإلكتروني (name@company.com)" data-ar-placeholder="البريد الإلكتروني (name@company.com)" data-en-placeholder="Email address (name@company.com)" required />
@@ -511,8 +549,8 @@
         </div>
         <textarea id="contactMessage" class="contact-textarea" rows="3" placeholder="اكتب رسالتك هنا..." data-ar-placeholder="اكتب رسالتك هنا..." data-en-placeholder="Write your message here..." required></textarea>
         <button type="submit" class="btn btn-primary contact-submit" data-ar="إرسال رسالة بريد إلكتروني ←" data-en="Send Email Message →">إرسال رسالة بريد إلكتروني ←</button>
-        <div class="contact-feedback" id="contactFeedback" data-ar="✓ تم تجهيز رسالتك! يمكنك المتابعة عبر تطبيق البريد الإلكتروني أو انتظار رد فريق SawtFlow." data-en="✓ Your message is ready! Continue in your email client or wait for a reply from the SawtFlow team.">
-          ✓ تم تجهيز رسالتك! يمكنك المتابعة عبر تطبيق البريد الإلكتروني أو انتظار رد فريق SawtFlow.
+        <div class="contact-feedback" id="contactFeedback" data-ar="✓ تم تجهيز رسالتك! يمكنك المتابعة عبر تطبيق البريد الإلكتروني أو انتظار رد فريق Sound Flow." data-en="✓ Your message is ready! Continue in your email client or wait for a reply from the Sound Flow team.">
+          ✓ تم تجهيز رسالتك! يمكنك المتابعة عبر تطبيق البريد الإلكتروني أو انتظار رد فريق Sound Flow.
         </div>
       </form>
     </section>
@@ -538,7 +576,7 @@
           <span>Email</span>
         </a>
       </div>
-      <p>© 2026 SawtFlow AI — Arabic Voice Intelligence for Business Automation.</p>
+      <p>© 2026 Sound Flow AI — Arabic & English Voice Intelligence for Business Automation.</p>
     </div>
   </footer>
 
@@ -583,7 +621,7 @@
           const message = document.getElementById('contactMessage').value.trim();
           if (email && message) {
             if (contactFeedback) contactFeedback.classList.add('show');
-            const mailtoUrl = `mailto:contact@sawtflow.ai?subject=${encodeURIComponent(subject || 'SawtFlow Inquiry')}&body=${encodeURIComponent('From: ' + email + '\n\n' + message)}`;
+            const mailtoUrl = `mailto:contact@sawtflow.ai?subject=${encodeURIComponent(subject || 'Sound Flow Inquiry')}&body=${encodeURIComponent('From: ' + email + '\n\n' + message)}`;
             window.location.href = mailtoUrl;
           }
         });

@@ -116,9 +116,8 @@ fun OverviewScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Text(
-                    text = if (isAr) "ذكاء صوتي عربي للأعمال" else "ARABIC VOICE INTELLIGENCE FOR BUSINESS",
-                    color = CyanAccent,
-                    fontFamily = FontFamily.Monospace,
+                    text = if (isAr) "ذكاء صوتي عربي وإنجليزي للأعمال" else "ARABIC & ENGLISH VOICE INTELLIGENCE FOR BUSINESS",
+                    color = Color.White,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
@@ -141,7 +140,7 @@ fun OverviewScreen(
                 ) {
                     Text(
                         text = "«فهمٌ أدق. قراراتٌ أوثق. عملٌ أسرع.»",
-                        color = AmberAccent,
+                        color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -149,10 +148,10 @@ fun OverviewScreen(
 
                 Text(
                     text = if (isAr)
-                        "يفهم SawtFlow طريقة حديث عملائك الحقيقية—من اللهجات العربية إلى المزج بين العربية والإنجليزية، والضوضاء، والنية المختبئة بين الكلمات."
+                        "يفهم Sound Flow طريقة حديث عملائك الحقيقية—بالعربية ولهجاتها أو بالإنجليزية أو بالمزج بينهما، والنية المختبئة بين الكلمات."
                     else
-                        "SawtFlow understands how your customers really speak—across Arabic dialects, English switches, noisy calls, and the intent hiding between the words.",
-                    color = Color.White.copy(alpha = 0.8f),
+                        "Sound Flow understands how your customers really speak—across Arabic dialects, English, code-switching, noisy calls, and the intent hiding between the words.",
+                    color = Color.White,
                     fontSize = 14.sp,
                     lineHeight = 20.sp
                 )
@@ -160,11 +159,13 @@ fun OverviewScreen(
                 Button(
                     onClick = { viewModel.selectTab(AppTab.STUDIO) },
                     modifier = Modifier.fillMaxWidth(),
-                    colors = ButtonDefaults.buttonColors(containerColor = AmberAccent, contentColor = NavyPrimary),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF7A4B0A), contentColor = Color.White),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, AmberAccent),
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(
-                        text = if (isAr) "فتح استوديو SawtFlow ←" else "Launch SawtFlow Studio →",
+                        text = if (isAr) "فتح استوديو Sound Flow ←" else "Launch Sound Flow Studio →",
+                        color = Color.White,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
                     )
@@ -175,8 +176,7 @@ fun OverviewScreen(
         // Capabilities Section
         Text(
             text = if (isAr) "القدرات الأساسية" else "CORE CAPABILITIES",
-            color = CyanAccent,
-            fontFamily = FontFamily.Monospace,
+            color = Color.White,
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
             letterSpacing = 1.sp
@@ -224,8 +224,7 @@ fun OverviewScreen(
             ) {
                 Text(
                     text = if (isAr) "من الصوت إلى النتيجة المعتمدة" else "FROM VOICE TO VERIFIED OUTCOME",
-                    color = CyanAccent,
-                    fontFamily = FontFamily.Monospace,
+                    color = Color.White,
                     fontSize = 10.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
@@ -262,9 +261,8 @@ fun OverviewScreen(
                         ) {
                             Text(
                                 text = index,
-                                color = CyanAccent,
+                                color = Color.White,
                                 fontSize = 12.sp,
-                                fontFamily = FontFamily.Monospace,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -278,7 +276,7 @@ fun OverviewScreen(
                             )
                             Text(
                                 text = desc,
-                                color = Color.White.copy(alpha = 0.6f),
+                                color = Color.White,
                                 fontSize = 12.sp
                             )
                         }
@@ -301,8 +299,7 @@ fun OverviewScreen(
             ) {
                 Text(
                     text = if (isAr) "تواصل معنا" else "CONTACT US",
-                    color = CyanAccent,
-                    fontFamily = FontFamily.Monospace,
+                    color = Color.White,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
@@ -317,10 +314,10 @@ fun OverviewScreen(
 
                 Text(
                     text = if (isAr)
-                        "هل لديك استفسار حول أتمتة الصوت العربي أو التكامل مع أنظمتك؟ تواصل مع فريق SawtFlow عبر البريد الإلكتروني."
+                        "هل لديك استفسار حول أتمتة الصوت العربي أو التكامل مع أنظمتك؟ تواصل مع فريق Sound Flow عبر البريد الإلكتروني."
                     else
-                        "Have a question about Arabic voice automation or integrations? Reach out to our team directly.",
-                    color = Color.White.copy(alpha = 0.7f),
+                        "Have a question about Arabic & English voice automation or integrations? Reach out to our team directly.",
+                    color = Color.White,
                     fontSize = 13.sp
                 )
 
@@ -425,9 +422,10 @@ fun OverviewScreen(
                         .heightIn(min = 48.dp)
                         .testTag("submit_contact_us_button"),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = CyanAccent,
-                        contentColor = NavyPrimary
+                        containerColor = Color(0xFF0C4E78),
+                        contentColor = Color.White
                     ),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, CyanAccent),
                     shape = RoundedCornerShape(10.dp),
                     enabled = isValidEmail && contactMessage.isNotBlank()
                 ) {
@@ -435,6 +433,7 @@ fun OverviewScreen(
                     Spacer(modifier = Modifier.width(8.dp))
                     Text(
                         text = if (isAr) "إرسال عبر البريد الإلكتروني" else "Send Email",
+                        color = Color.White,
                         fontWeight = FontWeight.Bold
                     )
                 }
@@ -458,7 +457,7 @@ fun OverviewScreen(
                                     "شكراً لتواصلك! تم إرسال رسالتك وتوثيقها بنجاح."
                                 else
                                     "Thanks for reaching out! Your message has been sent and logged.",
-                                color = Color(0xFF81C784),
+                                color = Color.White,
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.Medium
                             )
@@ -490,13 +489,13 @@ fun OverviewScreen(
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.ic_sawtflow_brand_logo),
-                        contentDescription = "SawtFlow Logo",
+                        contentDescription = "Sound Flow Logo",
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
                     )
                     Text(
-                        text = "SawtFlow AI",
+                        text = "Sound Flow AI",
                         color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
@@ -504,7 +503,7 @@ fun OverviewScreen(
                 }
 
                 Text(
-                    text = if (isAr) "تابعنا وتواصل معنا عبر المنصات الاجتماعية" else "Connect with SawtFlow on social media",
+                    text = if (isAr) "تابعنا وتواصل معنا عبر المنصات الاجتماعية" else "Connect with Sound Flow on social media",
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 12.sp
                 )
@@ -562,9 +561,9 @@ fun OverviewScreen(
 
                 Text(
                     text = if (isAr)
-                        "© 2026 SawtFlow AI · ذكاء الصوت العربي لأتمتة الأعمال"
+                        "© 2026 Sound Flow AI · ذكاء الصوت العربي والإنجليزي لأتمتة الأعمال"
                     else
-                        "© 2026 SawtFlow AI · Arabic Voice Intelligence",
+                        "© 2026 Sound Flow AI · Arabic & English Voice Intelligence",
                     color = Color.White.copy(alpha = 0.5f),
                     fontSize = 11.sp
                 )
@@ -621,14 +620,13 @@ fun CapabilityCard(
                     )
                     Text(
                         text = stepNumber,
-                        color = Color.White.copy(alpha = 0.4f),
-                        fontSize = 11.sp,
-                        fontFamily = FontFamily.Monospace
+                        color = Color.White,
+                        fontSize = 11.sp
                     )
                 }
                 Text(
                     text = desc,
-                    color = Color.White.copy(alpha = 0.7f),
+                    color = Color.White,
                     fontSize = 12.sp,
                     lineHeight = 17.sp
                 )

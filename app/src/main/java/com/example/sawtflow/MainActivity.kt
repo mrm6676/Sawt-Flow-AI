@@ -104,11 +104,11 @@ fun SawtFlowApp(viewModel: SawtFlowViewModel) {
                             icon = { Icon(icon, contentDescription = label) },
                             label = { Text(label) },
                             colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = NavyPrimary,
-                                selectedTextColor = CyanAccent,
-                                indicatorColor = CyanAccent,
-                                unselectedIconColor = Color.White.copy(alpha = 0.6f),
-                                unselectedTextColor = Color.White.copy(alpha = 0.6f)
+                                selectedIconColor = Color.White,
+                                selectedTextColor = Color.White,
+                                indicatorColor = Color(0xFF0C4E78),
+                                unselectedIconColor = Color.White.copy(alpha = 0.72f),
+                                unselectedTextColor = Color.White
                             )
                         )
                     }

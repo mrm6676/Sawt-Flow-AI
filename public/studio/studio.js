@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   restoreTranscriptDraft();
   state.draftReady = true;
   initTranscriptAutoSave();
-  logEvent('system.startup', null, 'system', `SawtFlow Studio initialized with ${state.orders.length} operational order records`);
+  logEvent('system.startup', null, 'system', `Sound Flow Studio initialized with ${state.orders.length} operational order records`);
   renderHistory();
 });
 
@@ -1010,6 +1010,41 @@ function initRecorder() {
 }
 
 function initActions() {
+  const loadEnglishSampleBtn = document.getElementById('loadEnglishSampleBtn');
+  if (loadEnglishSampleBtn) {
+    loadEnglishSampleBtn.addEventListener('click', async () => {
+      const prevDisabled = loadEnglishSampleBtn.disabled;
+      loadEnglishSampleBtn.disabled = true;
+      loadEnglishSampleBtn.textContent = state.lang === 'ar'
+        ? '⏳ جارٍ تحميل العينة الإنجليزية...'
+        : '⏳ Loading English WAV sample...';
+      try {
+        const res = await fetch('/studio/samples/en_order_SF-4420_inquiry.wav');
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        const blob = await res.blob();
+        const sampleFile = new File([blob], 'en_order_SF-4420_inquiry.wav', { type: 'audio/wav' });
+        const langSelect = document.getElementById('speechLangSelect');
+        if (langSelect) {
+          langSelect.value = 'english';
+        }
+        handleAudioFile(sampleFile);
+        logEvent('audio.english_sample_loaded', state.extractedOrderId, 'user', 'Loaded generated English WAV voice sample (en_order_SF-4420_inquiry.wav)');
+      } catch (err) {
+        setTranscriptionStatus(
+          'error',
+          state.lang === 'ar'
+            ? '⚠ تعذر تحميل العينة الصوتية الإنجليزية.'
+            : '⚠ Failed to load English voice sample WAV.'
+        );
+      } finally {
+        loadEnglishSampleBtn.disabled = prevDisabled;
+        loadEnglishSampleBtn.textContent = state.lang === 'ar'
+          ? loadEnglishSampleBtn.dataset.ar
+          : loadEnglishSampleBtn.dataset.en;
+      }
+    });
+  }
+
   document.getElementById('loadSampleBtn').addEventListener('click', () => {
     const txt = state.lang === 'ar'
       ? 'السلام عليكم، الطلب SF-4420 تأخر علي، متى بيوصل؟'
@@ -1289,11 +1324,11 @@ function lookupOrder(orderId, preserveApproval = false) {
 
   box.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <strong class="mono" style="color:var(--cyan); font-size:1.1rem;">${order.id}</strong>
+      <strong class="mono" style="color:#FFFFFF; font-size:1.1rem;">${order.id}</strong>
       <span class="${getOrderStatusClass(order.status)}">${order.status}</span>
     </div>
     <div><strong>${state.lang === 'ar' ? 'المدينة:' : 'City:'}</strong> ${order.city} · <strong>ETA:</strong> ${order.eta}</div>
-    <div style="color: var(--text-muted); font-size:0.9rem;">${order.lastScan}</div>
+    <div style="color: #FFFFFF; font-size:0.9rem;">${order.lastScan}</div>
   `;
 
   if (state.intent === 'cancel') {
@@ -1364,7 +1399,7 @@ function downloadOrdersCsv() {
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const dateTag = new Date().toISOString().slice(0, 10);
-  const filename = `sawtflow-orders-${dateTag}.csv`;
+  const filename = `soundflow-orders-${dateTag}.csv`;
 
   const link = document.createElement('a');
   link.href = url;
@@ -1434,12 +1469,12 @@ function renderOrdersPanel() {
       <div class="item-card-top">
         <label class="order-id-wrap">
           <input type="checkbox" class="order-checkbox" data-order-id="${o.id}" ${isChecked ? 'checked' : ''} aria-label="Select order ${o.id}" />
-          <strong class="mono" style="color: var(--cyan); font-size: 1.05rem;">${o.id}</strong>
+          <strong class="mono" style="color: #FFFFFF; font-size: 1.05rem;">${o.id}</strong>
         </label>
         <span class="${getOrderStatusClass(o.status)}">${o.status}</span>
       </div>
       <div style="font-size:0.9rem;">${o.city} · ${o.eta}</div>
-      <div style="color: var(--text-muted); font-size:0.85rem;">${o.lastScan}</div>
+      <div style="color: #FFFFFF; font-size:0.85rem;">${o.lastScan}</div>
       <button class="btn btn-outline load-order-btn" type="button" style="margin-top:auto;">
         ${state.lang === 'ar' ? 'اختبار في الاستوديو ←' : 'Load into Studio →'}
       </button>
@@ -1516,7 +1551,7 @@ function renderHistory() {
       </div>
       <p style="font-size:0.95rem;">${item.transcript}</p>
       <div class="item-card-top" style="margin-top:auto;">
-        <span class="mono" style="color:var(--cyan); font-size:0.85rem;">${item.orderId || ''}</span>
+        <span class="mono" style="color:#FFFFFF; font-size:0.85rem;">${item.orderId || ''}</span>
         <button class="btn btn-cyan" type="button" style="padding:0.45rem 0.85rem; font-size:0.82rem;">
           ${state.lang === 'ar' ? 'فتح بالاستوديو' : 'Load'}
         </button>
@@ -1546,10 +1581,10 @@ function logEvent(type, orderId, actor, details) {
     div.className = 'item-card';
     div.innerHTML = `
       <div class="item-card-top">
-        <strong class="mono" style="color:var(--cyan);">${entry.type}</strong>
-        <span class="mono" style="color:var(--text-muted); font-size:0.8rem;">${entry.time} · ${entry.actor}</span>
+        <strong class="mono" style="color:#FFFFFF;">${entry.type}</strong>
+        <span class="mono" style="color:#FFFFFF; font-size:0.8rem;">${entry.time} · ${entry.actor}</span>
       </div>
-      <div style="font-size:0.92rem;">${entry.details} <span class="mono" style="color:var(--amber);">[${entry.orderId}]</span></div>
+      <div style="font-size:0.92rem;">${entry.details} <span class="mono" style="color:#FFFFFF;">[${entry.orderId}]</span></div>
     `;
     container.appendChild(div);
   });

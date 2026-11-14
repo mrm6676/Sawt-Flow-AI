@@ -17,17 +17,17 @@ import androidx.core.view.WindowCompat
 
 private val DarkColorScheme = darkColorScheme(
     primary = CyanAccent,
-    onPrimary = NavyPrimary,
+    onPrimary = Color.White,
     primaryContainer = NavyLight,
-    onPrimaryContainer = CyanBright,
+    onPrimaryContainer = Color.White,
     secondary = AmberAccent,
-    onSecondary = NavyPrimary,
+    onSecondary = Color.White,
     background = NavyPrimary,
-    onBackground = CreamBg,
+    onBackground = Color.White,
     surface = NavySurface,
-    onSurface = CreamBg,
+    onSurface = Color.White,
     surfaceVariant = NavyCard,
-    onSurfaceVariant = CyanBright,
+    onSurfaceVariant = Color.White,
     outline = CyanAccent.copy(alpha = 0.3f)
 )
 
@@ -68,7 +68,8 @@ fun SawtFlowTheme(
     ) {
         CompositionLocalProvider(
             LocalTextStyle provides TextStyle(
-                fontFamily = CairoFontFamily
+                fontFamily = TajawalFontFamily,
+                color = Color.White
             ),
             content = content
         )

@@ -49,9 +49,9 @@ class GeminiTranscriptionService {
             } else "audio/mp3"
 
             val systemInstructions = """
-                You are SawtFlow AI, an advanced Arabic voice intelligence and speech-to-text engine.
-                Your task is to transcribe the spoken Arabic content from the audio recording into accurate written text.
-                - Support Arabic colloquial dialects (Saudi/Gulf, Egyptian, Levantine, Maghrebi) and mixed Arabic/English speech.
+                You are Sound Flow AI, an advanced bilingual Arabic and English voice intelligence and speech-to-text engine.
+                Your task is to transcribe the spoken Arabic or English content from the audio recording into accurate written text.
+                - Support Arabic colloquial dialects (Saudi/Gulf, Egyptian, Levantine, Maghrebi), English, and mixed Arabic/English speech.
                 - Preserve spoken numbers, dates, customer intent, and any order IDs or reference numbers (e.g., SF-1048, ORD-2045, #5520, or numeric order references).
                 - Transcribe what the speaker actually said without rewriting their intent.
                 - Provide ONLY the direct transcribed text. Do not include markdown code blocks, prefixes, or commentary.

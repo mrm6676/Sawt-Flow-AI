@@ -1,9 +1,9 @@
 <resources>
-    <string name="app_name">SawtFlow</string>
-    <string name="brand_subtitle">Arabic Voice Intelligence</string>
+    <string name="app_name">Sound Flow</string>
+    <string name="brand_subtitle">Arabic &amp; English Voice Intelligence</string>
     <string name="hero_arabic_quote">فهمٌ أدق. قراراتٌ أوثق. عملٌ أسرع.</string>
     <string name="hero_tagline">Speech that makes business move.</string>
-    <string name="hero_description">SawtFlow understands how your customers really speak—across Arabic dialects, English switches, noisy calls, and the intent hiding between the words.</string>
+    <string name="hero_description">Sound Flow understands how your customers really speak—across Arabic dialects, English, code-switching, noisy calls, and the intent hiding between the words.</string>
     
     <!-- Navigation -->
     <string name="tab_studio">Studio</string>
@@ -28,7 +28,7 @@
     <string name="step_5_approval">05 / APPROVAL</string>
     
     <string name="source_title">Start with a real voice.</string>
-    <string name="source_lead">Use an Arabic recording, record directly, or load a colloquial dialect sample.</string>
+    <string name="source_lead">Use an Arabic or English recording, record directly, or load a dialect sample.</string>
     <string name="dialect_label">Colloquial Dialect</string>
     <string name="dialect_gulf">Gulf / Saudi (خليجي / سعودي)</string>
     <string name="dialect_egyptian">Egyptian (مصري)</string>
@@ -46,7 +46,7 @@
     <string name="action_approve">Approve Response ✓</string>
     
     <string name="transcript_title">Correct the meaning, not the speaker.</string>
-    <string name="transcript_lead">SawtFlow preserves intent while you refine recognition errors.</string>
+    <string name="transcript_lead">Sound Flow preserves intent while you refine recognition errors.</string>
     <string name="intent_title">What the customer needs.</string>
     <string name="action_title">Retrieve the right evidence.</string>
     <string name="response_title">Respond with context.</string>
@@ -80,16 +80,16 @@
     
     <!-- Trust & Verification -->
     <string name="trust_title">Control stays explicit.</string>
-    <string name="trust_desc">Your customer conversations carry context. SawtFlow protects it with a deliberate action layer: retrieve, check, confirm, then respond.</string>
+    <string name="trust_desc">Your customer conversations carry context. Sound Flow protects it with a deliberate action layer: retrieve, check, confirm, then respond.</string>
     
     <!-- Contact Us & Footer -->
     <string name="contact_us_title">Contact Us</string>
-    <string name="contact_us_lead">Have a question about Arabic voice automation or integrations? Send us an email directly.</string>
+    <string name="contact_us_lead">Have a question about Arabic &amp; English voice automation or integrations? Send us an email directly.</string>
     <string name="input_contact_email">Your Email</string>
     <string name="input_contact_subject">Subject</string>
     <string name="input_contact_message">Your Message</string>
     <string name="btn_send_email">Send Email</string>
     <string name="contact_submitted_msg">Thank you! Your message has been sent and logged.</string>
-    <string name="footer_connect">Connect with SawtFlow</string>
-    <string name="footer_copyright">© 2026 SawtFlow AI · Arabic Voice Intelligence</string>
+    <string name="footer_connect">Connect with Sound Flow</string>
+    <string name="footer_copyright">© 2026 Sound Flow AI · Arabic &amp; English Voice Intelligence</string>
 </resources>

@@ -148,8 +148,7 @@ fun OrdersScreen(
             ) {
                 Text(
                     text = if (isAr) "قاعدة بيانات الطلبات / ${orders.size} سجلاً موثقاً" else "OPERATIONAL ORDERS DATABASE / ${orders.size} RECORDS",
-                    color = CyanAccent,
-                    fontFamily = FontFamily.Monospace,
+                    color = Color.White,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp
@@ -162,10 +161,10 @@ fun OrdersScreen(
                 )
                 Text(
                     text = if (isAr)
-                        "انقر على أي طلب للبحث فيه مباشرة في استوديو SawtFlow والتحقق من الاستجابة."
+                        "انقر على أي طلب للبحث فيه مباشرة في استوديو Sound Flow والتحقق من الاستجابة."
                     else
-                        "Tap any order to test lookup immediately in SawtFlow Studio.",
-                    color = Color.White.copy(alpha = 0.7f),
+                        "Tap any order to test lookup immediately in Sound Flow Studio.",
+                    color = Color.White,
                     fontSize = 13.sp
                 )
             }
@@ -175,7 +174,7 @@ fun OrdersScreen(
             OutlinedButton(
                 onClick = {
                     val dateStamp = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
-                    createCsvLauncher.launch("sawtflow-orders-$dateStamp.csv")
+                    createCsvLauncher.launch("soundflow-orders-$dateStamp.csv")
                 },
                 enabled = filteredOrders.isNotEmpty(),
                 modifier = Modifier
@@ -184,7 +183,7 @@ fun OrdersScreen(
                 shape = RoundedCornerShape(10.dp),
                 colors = ButtonDefaults.outlinedButtonColors(
                     containerColor = NavySurface,
-                    contentColor = CyanAccent
+                    contentColor = Color.White
                 )
             ) {
                 Icon(
@@ -195,6 +194,7 @@ fun OrdersScreen(
                 Spacer(modifier = Modifier.width(6.dp))
                 Text(
                     text = if (isAr) "CSV" else "Download CSV",
+                    color = Color.White,
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold
                 )
@@ -240,8 +240,8 @@ fun OrdersScreen(
                         )
                     },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = CyanAccent,
-                        selectedLabelColor = NavyPrimary,
+                        selectedContainerColor = Color(0xFF0C4E78),
+                        selectedLabelColor = Color.White,
                         containerColor = NavySurface,
                         labelColor = Color.White
                     ),
@@ -322,7 +322,7 @@ fun OrdersScreen(
                     ) {
                         Text(
                             text = if (isAr) "${selectedOrderIds.size} محدد" else "${selectedOrderIds.size} selected",
-                            color = if (selectedOrderIds.isNotEmpty()) GreenSuccess else Color.White.copy(alpha = 0.7f),
+                            color = Color.White,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -399,15 +399,17 @@ fun OrdersScreen(
                             .heightIn(min = 48.dp)
                             .testTag("apply_batch_status_button"),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = CyanAccent,
-                            contentColor = NavyPrimary,
+                            containerColor = Color(0xFF0C4E78),
+                            contentColor = Color.White,
                             disabledContainerColor = NavyCard,
-                            disabledContentColor = Color.White.copy(alpha = 0.4f)
+                            disabledContentColor = Color.White.copy(alpha = 0.45f)
                         ),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, CyanAccent.copy(alpha = 0.5f)),
                         shape = RoundedCornerShape(10.dp)
                     ) {
                         Text(
                             text = if (isAr) "تطبيق" else "Apply",
+                            color = Color.White,
                             fontWeight = FontWeight.Bold,
                             fontSize = 13.sp
                         )
@@ -435,7 +437,7 @@ fun OrdersScreen(
                     )
                     Text(
                         text = batchFeedbackMessage.orEmpty(),
-                        color = GreenSuccess,
+                        color = Color.White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold
                     )
@@ -520,14 +522,13 @@ fun OrderItemCard(
                     )
                     Text(
                         text = order.id,
-                        color = CyanAccent,
-                        fontFamily = FontFamily.Monospace,
+                        color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
                         text = "• ${order.city}",
-                        color = Color.White.copy(alpha = 0.6f),
+                        color = Color.White,
                         fontSize = 12.sp
                     )
                 }
@@ -539,19 +540,15 @@ fun OrderItemCard(
                             when (order.status) {
                                 "Delivered", "Completed", "Verified" -> GreenSuccess
                                 "Canceled" -> Color(0xFFBA1A1A)
-                                "Delayed", "Pending" -> AmberAccent
-                                else -> CyanAccent.copy(alpha = 0.2f)
+                                "Delayed", "Pending" -> Color(0xFF7A4B0A)
+                                else -> Color(0xFF0C4E78)
                             }
                         )
                         .padding(horizontal = 8.dp, vertical = 2.dp)
                 ) {
                     Text(
                         text = order.status,
-                        color = when (order.status) {
-                            "Delivered", "Completed", "Verified", "Canceled" -> Color.White
-                            "Delayed", "Pending" -> NavyPrimary
-                            else -> CyanAccent
-                        },
+                        color = Color.White,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -567,9 +564,8 @@ fun OrderItemCard(
                 Column {
                     Text(
                         text = if (isAr) "الموعد المتوقع" else "ETA",
-                        color = Color.White.copy(alpha = 0.5f),
-                        fontSize = 10.sp,
-                        fontFamily = FontFamily.Monospace
+                        color = Color.White,
+                        fontSize = 10.sp
                     )
                     Text(
                         text = order.eta,
@@ -581,9 +577,8 @@ fun OrderItemCard(
                 Column(horizontalAlignment = Alignment.End) {
                     Text(
                         text = if (isAr) "آخر فحص" else "LAST SCAN",
-                        color = Color.White.copy(alpha = 0.5f),
-                        fontSize = 10.sp,
-                        fontFamily = FontFamily.Monospace
+                        color = Color.White,
+                        fontSize = 10.sp
                     )
                     Text(
                         text = order.lastScan,
@@ -603,7 +598,7 @@ fun OrderItemCard(
             ) {
                 Text(
                     text = if (isAr) "فتح في الاستوديو" else "Open in Studio",
-                    color = AmberAccent,
+                    color = Color.White,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold
                 )
