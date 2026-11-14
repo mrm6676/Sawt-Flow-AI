@@ -143,7 +143,7 @@ fun HistoryScreen(
                     onClick = { showClearConfirmDialog = false },
                     modifier = Modifier.testTag("cancel_clear_history_button")
                 ) {
-                    Text(if (isAr) "إلغاء" else "Cancel", color = Color.White)
+                    Text(if (isAr) "إلغاء" else "Cancel", color = Color.White.copy(alpha = 0.7f))
                 }
             },
             containerColor = NavySurface,
@@ -204,7 +204,7 @@ fun HistoryScreen(
                                 Text(
                                     text = if (isAr) "قاعدة بيانات Room المحلية · تفريغات Gemini 3.8 Flash" else "Local Room Database · Gemini 3.8 Flash Transcripts",
                                     fontSize = 12.sp,
-                                    color = Color.White
+                                    color = Color.White.copy(alpha = 0.6f)
                                 )
                             }
                         }
@@ -212,7 +212,7 @@ fun HistoryScreen(
                         if (transcripts.isNotEmpty()) {
                             OutlinedButton(
                                 onClick = { showClearConfirmDialog = true },
-                                colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                                colors = ButtonDefaults.outlinedButtonColors(contentColor = CoralAccent),
                                 border = ButtonDefaults.outlinedButtonBorder.copy(
                                     brush = androidx.compose.ui.graphics.SolidColor(CoralAccent.copy(alpha = 0.5f))
                                 ),
@@ -225,7 +225,7 @@ fun HistoryScreen(
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(4.dp))
-                                Text(if (isAr) "مسح" else "Clear", color = Color.White, fontSize = 12.sp)
+                                Text(if (isAr) "مسح" else "Clear", fontSize = 12.sp)
                             }
                         }
                     }
@@ -292,10 +292,10 @@ fun HistoryScreen(
                                 onClick = { selectedDialectFilter = null },
                                 label = { Text(if (isAr) "الكل (${transcripts.size})" else "All (${transcripts.size})") },
                                 colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = Color(0xFF0C4E78),
-                                    selectedLabelColor = Color.White,
+                                    selectedContainerColor = CyanAccent,
+                                    selectedLabelColor = NavyPrimary,
                                     containerColor = NavyCard,
-                                    labelColor = Color.White
+                                    labelColor = Color.White.copy(alpha = 0.8f)
                                 ),
                                 modifier = Modifier.testTag("filter_all_dialects")
                             )
@@ -309,10 +309,10 @@ fun HistoryScreen(
                                 },
                                 label = { Text(label) },
                                 colors = FilterChipDefaults.filterChipColors(
-                                    selectedContainerColor = Color(0xFF0C4E78),
-                                    selectedLabelColor = Color.White,
+                                    selectedContainerColor = CyanAccent,
+                                    selectedLabelColor = NavyPrimary,
                                     containerColor = NavyCard,
-                                    labelColor = Color.White
+                                    labelColor = Color.White.copy(alpha = 0.8f)
                                 ),
                                 modifier = Modifier.testTag("filter_dialect_$key")
                             )
@@ -376,7 +376,7 @@ fun HistoryScreen(
                                     "When you record or upload audio and transcribe it with Gemini 3.8 Flash in Studio, it will automatically be saved to local Room storage."
                             },
                             fontSize = 13.sp,
-                            color = Color.White,
+                            color = Color.White.copy(alpha = 0.7f),
                             lineHeight = 18.sp
                         )
 
@@ -384,10 +384,9 @@ fun HistoryScreen(
                             Button(
                                 onClick = { viewModel.selectTab(AppTab.STUDIO) },
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF0C4E78),
-                                    contentColor = Color.White
+                                    containerColor = CyanAccent,
+                                    contentColor = NavyPrimary
                                 ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, CyanAccent),
                                 shape = RoundedCornerShape(10.dp),
                                 modifier = Modifier.testTag("open_studio_from_empty_history")
                             ) {
@@ -399,7 +398,6 @@ fun HistoryScreen(
                                 Spacer(modifier = Modifier.width(6.dp))
                                 Text(
                                     text = if (isAr) "الانتقال إلى الاستوديو والتفريغ" else "Go to Studio & Transcribe",
-                                    color = Color.White,
                                     fontWeight = FontWeight.Bold
                                 )
                             }
@@ -474,7 +472,7 @@ private fun SavedTranscriptCard(
                         text = item.audioFileName ?: (if (isAr) "تسجيل صوتي مباشر" else "Live Audio"),
                         fontSize = 12.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        color = Color.White.copy(alpha = 0.85f)
                     )
                 }
 
@@ -492,14 +490,14 @@ private fun SavedTranscriptCard(
                             text = item.source,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = CyanAccent
                         )
                     }
 
                     Text(
                         text = item.formattedTime,
                         fontSize = 11.sp,
-                        color = Color.White
+                        color = Color.White.copy(alpha = 0.5f)
                     )
                 }
             }
@@ -538,7 +536,7 @@ private fun SavedTranscriptCard(
                     Text(
                         text = item.dialect,
                         fontSize = 11.sp,
-                        color = Color.White
+                        color = Color.White.copy(alpha = 0.85f)
                     )
                 }
 
@@ -551,6 +549,11 @@ private fun SavedTranscriptCard(
                     isModify -> AmberAccent.copy(alpha = 0.2f)
                     else -> EmeraldAccent.copy(alpha = 0.2f)
                 }
+                val intentFg: Color = when {
+                    isCancel -> CoralAccent
+                    isModify -> AmberAccent
+                    else -> EmeraldAccent
+                }
                 Box(
                     modifier = Modifier
                         .clip(RoundedCornerShape(6.dp))
@@ -561,7 +564,7 @@ private fun SavedTranscriptCard(
                         text = item.detectedIntent,
                         fontSize = 11.sp,
                         fontWeight = FontWeight.SemiBold,
-                        color = Color.White
+                        color = intentFg
                     )
                 }
 
@@ -577,7 +580,7 @@ private fun SavedTranscriptCard(
                             text = item.extractedOrderId,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color.White
+                            color = CyanAccent
                         )
                     }
                 }
@@ -588,7 +591,7 @@ private fun SavedTranscriptCard(
                 Text(
                     text = item.confidence,
                     fontSize = 11.sp,
-                    color = Color.White
+                    color = Color.White.copy(alpha = 0.6f)
                 )
             }
 
@@ -601,10 +604,9 @@ private fun SavedTranscriptCard(
                 Button(
                     onClick = onLoadIntoStudio,
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFF0C4E78),
-                        contentColor = Color.White
+                        containerColor = CyanAccent,
+                        contentColor = NavyPrimary
                     ),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, CyanAccent),
                     shape = RoundedCornerShape(8.dp),
                     modifier = Modifier.testTag("load_into_studio_button_${item.id}")
                 ) {
@@ -616,7 +618,6 @@ private fun SavedTranscriptCard(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (isAr) "فتح في الاستوديو" else "Load in Studio",
-                        color = Color.White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )

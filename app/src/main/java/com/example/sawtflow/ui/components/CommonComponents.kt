@@ -87,7 +87,7 @@ fun SawtFlowHeader(
                 )
                 Text(
                     text = "Flow",
-                    color = Color.White,
+                    color = CyanAccent,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,
                     letterSpacing = (-0.5).sp
@@ -100,7 +100,7 @@ fun SawtFlowHeader(
             onClick = onToggleLanguage,
             shape = RoundedCornerShape(20.dp),
             colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = Color.White
+                contentColor = CyanAccent
             ),
             border = ButtonDefaults.outlinedButtonBorder.copy(
                 brush = Brush.horizontalGradient(listOf(CyanAccent, AmberAccent))
@@ -109,7 +109,7 @@ fun SawtFlowHeader(
         ) {
             Text(
                 text = if (currentLanguage == AppLanguage.EN) "عربي" else "EN",
-                color = Color.White,
+                color = CyanAccent,
                 fontWeight = FontWeight.Bold,
                 fontSize = 13.sp
             )
@@ -205,7 +205,7 @@ fun AudioWaveformBanner(
             Spacer(modifier = Modifier.width(6.dp))
             Text(
                 text = if (isRecording) "LIVE RECORDING" else "AUDIO INTELLIGENCE STREAM",
-                color = Color.White,
+                color = CyanAccent,
                 fontSize = 10.sp,
                 fontFamily = TajawalFontFamily,
                 fontWeight = FontWeight.Bold
@@ -227,7 +227,7 @@ fun StepBadge(
     ) {
         Text(
             text = indexText,
-            color = Color.White,
+            color = CyanAccent,
             fontFamily = TajawalFontFamily,
             fontSize = 11.sp,
             fontWeight = FontWeight.Bold,
@@ -245,7 +245,7 @@ fun StepBadge(
             )
             Text(
                 text = statusText,
-                color = Color.White,
+                color = statusColor,
                 fontFamily = TajawalFontFamily,
                 fontSize = 10.sp,
                 fontWeight = FontWeight.Bold

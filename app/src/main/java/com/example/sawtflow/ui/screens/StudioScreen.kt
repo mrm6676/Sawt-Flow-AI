@@ -177,7 +177,7 @@ fun StudioScreen(
             ) {
                 Text(
                     text = if (isAr) "استوديو SOUND FLOW / مساحة الذكاء الصوتي" else "SOUND FLOW STUDIO / VOICE INTELLIGENCE WORKSPACE",
-                    color = Color.White,
+                    color = CyanAccent,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
                     letterSpacing = 1.sp,
@@ -192,7 +192,7 @@ fun StudioScreen(
                     shape = RoundedCornerShape(999.dp),
                     colors = ButtonDefaults.outlinedButtonColors(
                         containerColor = NavySurface,
-                        contentColor = Color.White
+                        contentColor = CyanAccent
                     )
                 ) {
                     Icon(
@@ -203,7 +203,6 @@ fun StudioScreen(
                     Spacer(modifier = Modifier.width(6.dp))
                     Text(
                         text = if (isAr) "الرئيسية" else "Main Page",
-                        color = Color.White,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -221,7 +220,7 @@ fun StudioScreen(
                     "ارفع محادثة، وصحّح ما التقطه التعرّف الصوتي، وحوّل نية العميل إلى رد تجاري معتمد."
                 else
                     "Upload or record a conversation, correct speech recognition, and turn customer intent into a verified business response.",
-                color = Color.White,
+                color = Color.White.copy(alpha = 0.75f),
                 fontSize = 14.sp
             )
         }
@@ -256,7 +255,7 @@ fun StudioScreen(
 
                 Text(
                     text = if (isAr) "اختر لهجة عامية عربية:" else "Select a colloquial Arabic dialect:",
-                    color = Color.White,
+                    color = Color.White.copy(alpha = 0.75f),
                     fontSize = 13.sp
                 )
 
@@ -272,14 +271,13 @@ fun StudioScreen(
                             label = {
                                 Text(
                                     text = if (isAr) dialect.labelAr else dialect.labelEn,
-                                    color = Color.White,
                                     fontSize = 12.sp,
                                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
                                 )
                             },
                             colors = SuggestionChipDefaults.suggestionChipColors(
-                                containerColor = if (isSelected) Color(0xFF0C4E78) else NavyCard,
-                                labelColor = Color.White
+                                containerColor = if (isSelected) CyanAccent else NavyCard,
+                                labelColor = if (isSelected) NavyPrimary else Color.White.copy(alpha = 0.8f)
                             ),
                             border = SuggestionChipDefaults.suggestionChipBorder(
                                 enabled = true,
@@ -336,7 +334,7 @@ fun StudioScreen(
                                 "MP3 أو WAV أو M4A أو AAC · انقر لاختيار ملف صوتي من جهازك"
                             else
                                 "MP3, WAV, M4A, AAC · up to 25 MB · Tap to browse",
-                            color = Color.White,
+                            color = Color.White.copy(alpha = 0.6f),
                             fontSize = 12.sp
                         )
                     }
@@ -366,13 +364,12 @@ fun StudioScreen(
                                     Box(
                                         modifier = Modifier
                                             .clip(RoundedCornerShape(4.dp))
-                                            .background(Color(0xFF0C4E78))
-                                            .border(1.dp, CyanAccent, RoundedCornerShape(4.dp))
+                                            .background(CyanAccent.copy(alpha = 0.2f))
                                             .padding(horizontal = 6.dp, vertical = 2.dp)
                                     ) {
                                         Text(
                                             text = "AUDIO",
-                                            color = Color.White,
+                                            color = CyanAccent,
                                             fontSize = 9.sp,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -387,7 +384,7 @@ fun StudioScreen(
                                         )
                                         Text(
                                             text = state.uploadedAudioSize ?: "1.4 MB",
-                                            color = Color.White,
+                                            color = Color.White.copy(alpha = 0.6f),
                                             fontSize = 10.sp
                                         )
                                     }
@@ -445,12 +442,12 @@ fun StudioScreen(
                                     ) {
                                         Text(
                                             text = state.playbackPosition,
-                                            color = Color.White,
+                                            color = Color.White.copy(alpha = 0.6f),
                                             fontSize = 10.sp
                                         )
                                         Text(
                                             text = state.playbackDuration,
-                                            color = Color.White,
+                                            color = Color.White.copy(alpha = 0.6f),
                                             fontSize = 10.sp
                                         )
                                     }
@@ -465,12 +462,8 @@ fun StudioScreen(
                                     .heightIn(min = 48.dp)
                                     .testTag("approve_voice_recording_button"),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = if (state.isUploadedAudioApproved) GreenSuccess else Color(0xFF0C4E78),
-                                    contentColor = Color.White
-                                ),
-                                border = androidx.compose.foundation.BorderStroke(
-                                    1.dp,
-                                    if (state.isUploadedAudioApproved) GreenSuccess else CyanAccent
+                                    containerColor = if (state.isUploadedAudioApproved) GreenSuccess else CyanAccent,
+                                    contentColor = if (state.isUploadedAudioApproved) Color.White else NavyPrimary
                                 ),
                                 shape = RoundedCornerShape(8.dp)
                             ) {
@@ -487,7 +480,6 @@ fun StudioScreen(
                                         isAr -> "اعتماد التسجيل الصوتي"
                                         else -> "Approve Voice Recording"
                                     },
-                                    color = Color.White,
                                     fontWeight = FontWeight.Bold,
                                     fontSize = 13.sp
                                 )
@@ -501,23 +493,22 @@ fun StudioScreen(
                                     .heightIn(min = 48.dp)
                                     .testTag("gemini_transcribe_button"),
                                 colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF7A4B0A),
-                                    contentColor = Color.White
+                                    containerColor = AmberAccent,
+                                    contentColor = NavyPrimary
                                 ),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, AmberAccent),
                                 shape = RoundedCornerShape(8.dp),
                                 enabled = !state.isTranscribingWithGemini
                             ) {
                                 if (state.isTranscribingWithGemini) {
                                     CircularProgressIndicator(
                                         modifier = Modifier.size(16.dp),
-                                        color = Color.White,
+                                        color = NavyPrimary,
                                         strokeWidth = 2.dp
                                     )
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = if (isAr) "جارٍ المعالجة عبر Gemini 3.8 Flash..." else "Transcribing with Gemini 3.8 Flash...",
-                                        color = Color.White,
+                                        color = NavyPrimary,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 12.sp
                                     )
@@ -530,7 +521,7 @@ fun StudioScreen(
                                     Spacer(modifier = Modifier.width(8.dp))
                                     Text(
                                         text = if (isAr) "تفريغ الصوت عبر Gemini API ✨" else "Transcribe with Gemini API ✨",
-                                        color = Color.White,
+                                        color = NavyPrimary,
                                         fontWeight = FontWeight.Bold,
                                         fontSize = 13.sp
                                     )
@@ -543,7 +534,7 @@ fun StudioScreen(
                 // Preset audio samples section
                 Text(
                     text = if (isAr) "أو اختر عينة تسجيل مسبقة:" else "Or try pre-recorded voice samples:",
-                    color = Color.White,
+                    color = Color.White.copy(alpha = 0.7f),
                     fontSize = 12.sp
                 )
 
@@ -628,7 +619,7 @@ fun StudioScreen(
                                 )
                                 Text(
                                     text = clip.fileName,
-                                    color = Color.White,
+                                    color = if (isEnglishRealWav) CyanAccent else Color.White,
                                     fontSize = 11.sp,
                                     fontWeight = if (isEnglishRealWav) FontWeight.SemiBold else FontWeight.Normal
                                 )
@@ -662,12 +653,8 @@ fun StudioScreen(
                             .weight(1f)
                             .testTag("record_voice_button"),
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = if (state.isRecording) Color(0xFFD32F2F) else Color(0xFF7A4B0A),
-                            contentColor = Color.White
-                        ),
-                        border = androidx.compose.foundation.BorderStroke(
-                            1.dp,
-                            if (state.isRecording) Color(0xFFFF6E6E) else AmberAccent
+                            containerColor = if (state.isRecording) Color.Red else AmberAccent,
+                            contentColor = if (state.isRecording) Color.White else NavyPrimary
                         ),
                         shape = RoundedCornerShape(10.dp)
                     ) {
@@ -682,7 +669,6 @@ fun StudioScreen(
                             } else {
                                 if (isAr) "تسجيل صوتي" else "Record Voice"
                             },
-                            color = Color.White,
                             fontWeight = FontWeight.Bold
                         )
                     }
@@ -693,13 +679,13 @@ fun StudioScreen(
                             .weight(1f)
                             .testTag("load_sample_button"),
                         shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = CyanAccent)
                     ) {
                         Icon(Icons.Default.Refresh, contentDescription = "Sample")
                         Spacer(modifier = Modifier.width(6.dp))
                         Text(
                             text = if (isAr) "رسالة نموذجية" else "Use Sample",
-                            color = Color.White,
+                            color = CyanAccent,
                             fontWeight = FontWeight.SemiBold
                         )
                     }
@@ -715,7 +701,7 @@ fun StudioScreen(
                 ) {
                     Text(
                         text = "• ${state.audioStatusMessage}",
-                        color = Color.White,
+                        color = CyanAccent,
                         fontSize = 12.sp
                     )
                 }
@@ -754,7 +740,7 @@ fun StudioScreen(
                         )
                         Text(
                             text = if (isAr) "يحافظ Sound Flow على النية بينما تنقّح الأخطاء." else "Sound Flow preserves intent while you refine errors.",
-                            color = Color.White,
+                            color = Color.White.copy(alpha = 0.75f),
                             fontSize = 13.sp
                         )
                     }
@@ -778,7 +764,7 @@ fun StudioScreen(
                         )
                         Text(
                             text = "Gemini 3.8 Flash Speech AI",
-                            color = Color.White,
+                            color = AmberAccent,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -788,12 +774,12 @@ fun StudioScreen(
                         onClick = { viewModel.transcribeAudioWithGemini(context) },
                         enabled = !state.isTranscribingWithGemini,
                         shape = RoundedCornerShape(20.dp),
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = AmberAccent),
                         modifier = Modifier.height(32.dp)
                     ) {
                         Text(
                             text = if (isAr) "تفريغ عبر Gemini ✨" else "Transcribe with Gemini ✨",
-                            color = Color.White,
+                            color = AmberAccent,
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -815,7 +801,7 @@ fun StudioScreen(
                                 "جارٍ استخراج النص الصوتي من التسجيل..."
                             else
                                 "Transcribing spoken content from voice recording...",
-                            color = Color.White,
+                            color = AmberAccent,
                             fontSize = 11.sp
                         )
                     }
@@ -833,7 +819,7 @@ fun StudioScreen(
                     ) {
                         Text(
                             text = "✓ ${state.geminiSuccessMessage}",
-                            color = Color.White,
+                            color = Color(0xFF63F2A1),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -851,7 +837,7 @@ fun StudioScreen(
                     ) {
                         Text(
                             text = "⚠ ${state.geminiError}",
-                            color = Color.White,
+                            color = Color(0xFFFF8A8A),
                             fontSize = 12.sp
                         )
                     }
@@ -932,7 +918,7 @@ fun StudioScreen(
                             )
                             Text(
                                 text = state.historySaveMessage,
-                                color = Color.White,
+                                color = Color(0xFF63F2A1),
                                 fontSize = 12.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -947,7 +933,7 @@ fun StudioScreen(
                 ) {
                     Text(
                         text = if (isAr) "مستوى الثقة ${state.confidence}" else "Confidence ${state.confidence}",
-                        color = Color.White,
+                        color = Color.White.copy(alpha = 0.6f),
                         fontSize = 12.sp
                     )
 
@@ -957,7 +943,7 @@ fun StudioScreen(
                     ) {
                         OutlinedButton(
                             onClick = { viewModel.saveCurrentTranscriptToHistory() },
-                            colors = ButtonDefaults.outlinedButtonColors(contentColor = Color.White),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = AmberAccent),
                             border = androidx.compose.foundation.BorderStroke(1.dp, AmberAccent.copy(alpha = 0.5f)),
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.testTag("save_transcript_history_button")
@@ -970,7 +956,7 @@ fun StudioScreen(
                             Spacer(modifier = Modifier.width(4.dp))
                             Text(
                                 text = if (isAr) "حفظ بالسجل" else "Save to DB",
-                                color = Color.White,
+                                color = AmberAccent,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.SemiBold
                             )
@@ -979,16 +965,15 @@ fun StudioScreen(
                         Button(
                             onClick = { viewModel.analyzeIntent() },
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF0C4E78),
-                                contentColor = Color.White
+                                containerColor = CyanAccent,
+                                contentColor = NavyPrimary
                             ),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, CyanAccent),
                             shape = RoundedCornerShape(8.dp),
                             modifier = Modifier.testTag("analyze_intent_button")
                         ) {
                             Text(
                                 text = if (isAr) "تحليل النية ←" else "Analyze intent →",
-                                color = Color.White,
+                                color = NavyPrimary,
                                 fontWeight = FontWeight.Bold
                             )
                         }
@@ -1044,7 +1029,7 @@ fun StudioScreen(
                         ) {
                             Text(
                                 text = "◎",
-                                color = Color.White,
+                                color = AmberAccent,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -1053,13 +1038,13 @@ fun StudioScreen(
                         Column {
                             Text(
                                 text = if (isAr) "النية المكتشفة" else "DETECTED INTENT",
-                                color = Color.White,
+                                color = AmberAccent,
                                 fontSize = 10.sp,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
                                 text = if (isAr) state.detectedIntent.labelAr else state.detectedIntent.labelEn,
-                                color = Color.White,
+                                color = CyanAccent,
                                 fontSize = 18.sp,
                                 fontWeight = FontWeight.ExtraBold
                             )
@@ -1082,7 +1067,7 @@ fun StudioScreen(
                         Column {
                             Text(
                                 text = if (isAr) "اللغة" else "LANGUAGE",
-                                color = Color.White,
+                                color = Color.White.copy(alpha = 0.5f),
                                 fontSize = 9.sp
                             )
                             Text(
@@ -1104,12 +1089,12 @@ fun StudioScreen(
                         Column {
                             Text(
                                 text = if (isAr) "الأولوية" else "URGENCY",
-                                color = Color.White,
+                                color = Color.White.copy(alpha = 0.5f),
                                 fontSize = 9.sp
                             )
                             Text(
                                 text = state.urgency,
-                                color = Color.White,
+                                color = if (state.urgency == "High" || state.urgency == "عالية") AmberAccent else Color.White,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -1126,12 +1111,12 @@ fun StudioScreen(
                         Column {
                             Text(
                                 text = if (isAr) "الطلب المستخرج" else "EXTRACTED",
-                                color = Color.White,
+                                color = Color.White.copy(alpha = 0.5f),
                                 fontSize = 9.sp
                             )
                             Text(
                                 text = state.extractedOrderId ?: "N/A",
-                                color = Color.White,
+                                color = CyanAccent,
                                 fontSize = 11.sp,
                                 fontWeight = FontWeight.Bold
                             )
@@ -1171,7 +1156,7 @@ fun StudioScreen(
                         "يقترح الوكيل بحثاً في الطلب للقراءة فقط قبل صياغة أي رد."
                     else
                         "The agent proposes a read-only order lookup before drafting a response.",
-                    color = Color.White,
+                    color = Color.White.copy(alpha = 0.75f),
                     fontSize = 13.sp
                 )
 
@@ -1203,13 +1188,12 @@ fun StudioScreen(
                     Button(
                         onClick = { viewModel.retrieveOrder() },
                         shape = RoundedCornerShape(10.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF0C4E78), contentColor = Color.White),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, CyanAccent),
+                        colors = ButtonDefaults.buttonColors(containerColor = CyanAccent, contentColor = NavyPrimary),
                         modifier = Modifier.testTag("retrieve_order_button")
                     ) {
                         Icon(Icons.Default.Search, contentDescription = "Retrieve")
                         Spacer(modifier = Modifier.width(4.dp))
-                        Text(if (isAr) "استرجاع" else "Lookup", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text(if (isAr) "استرجاع" else "Lookup", fontWeight = FontWeight.Bold)
                     }
                 }
 
@@ -1231,7 +1215,7 @@ fun StudioScreen(
                         ) {
                             Text(
                                 text = id,
-                                color = Color.White,
+                                color = CyanAccent,
                                 fontSize = 11.sp
                             )
                         }
@@ -1256,7 +1240,7 @@ fun StudioScreen(
                                 ) {
                                     Text(
                                         text = "${if (isAr) "طلب" else "ORDER"}: ${order.id}",
-                                        color = Color.White,
+                                        color = CyanAccent,
                                         fontWeight = FontWeight.Bold
                                     )
                                     Box(
@@ -1266,14 +1250,14 @@ fun StudioScreen(
                                                 when (order.status) {
                                                     "Delivered" -> GreenSuccess
                                                     "Canceled" -> Color(0xFFBA1A1A)
-                                                    else -> Color(0xFF7A4B0A)
+                                                    else -> AmberAccent
                                                 }
                                             )
                                             .padding(horizontal = 8.dp, vertical = 2.dp)
                                     ) {
                                         Text(
                                             text = order.status,
-                                            color = Color.White,
+                                            color = if (order.status == "Delivered" || order.status == "Canceled") Color.White else NavyPrimary,
                                             fontSize = 11.sp,
                                             fontWeight = FontWeight.Bold
                                         )
@@ -1289,7 +1273,7 @@ fun StudioScreen(
                                     Column {
                                         Text(
                                             text = if (isAr) "الموعد المتوقع" else "ETA",
-                                            color = Color.White,
+                                            color = Color.White.copy(alpha = 0.5f),
                                             fontSize = 10.sp
                                         )
                                         Text(
@@ -1303,7 +1287,7 @@ fun StudioScreen(
                                     Column(horizontalAlignment = Alignment.End) {
                                         Text(
                                             text = if (isAr) "آخر فحص" else "LAST SCAN",
-                                            color = Color.White,
+                                            color = Color.White.copy(alpha = 0.5f),
                                             fontSize = 10.sp
                                         )
                                         Text(
@@ -1357,7 +1341,7 @@ fun StudioScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
                         Text(
                             text = if (isAr) "الرد المقترح" else "DRAFT RESPONSE",
-                            color = Color.White,
+                            color = AmberAccent,
                             fontSize = 10.sp,
                             fontWeight = FontWeight.Bold
                         )
@@ -1379,12 +1363,8 @@ fun StudioScreen(
                         .testTag("approve_response_button"),
                     shape = RoundedCornerShape(10.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = if (state.isApproved) GreenSuccess else Color(0xFF7A4B0A),
-                        contentColor = Color.White
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        if (state.isApproved) GreenSuccess else AmberAccent
+                        containerColor = if (state.isApproved) GreenSuccess else AmberAccent,
+                        contentColor = if (state.isApproved) Color.White else NavyPrimary
                     ),
                     enabled = state.activeOrder != null
                 ) {
@@ -1399,7 +1379,6 @@ fun StudioScreen(
                         } else {
                             if (isAr) "اعتماد الرد ✓" else "Approve response ✓"
                         },
-                        color = Color.White,
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -1420,7 +1399,7 @@ fun StudioScreen(
                                 "✓ تم تسجيل الاعتماد في سجل التدقيق بنجاح مع المحافظة على خصوصية البيانات."
                             else
                                 "✓ Approval logged to audit trail. Response ready to dispatch to customer.",
-                            color = Color.White,
+                            color = Color(0xFF63F2A1),
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -1449,7 +1428,7 @@ fun StudioScreen(
                     }
                 },
                 containerColor = NavyCard,
-                contentColor = Color.White,
+                contentColor = CyanAccent,
                 shape = CircleShape,
                 modifier = Modifier
                     .size(46.dp)
@@ -1459,7 +1438,7 @@ fun StudioScreen(
                 Icon(
                     imageVector = Icons.Default.KeyboardArrowDown,
                     contentDescription = if (isAr) "تمرير لأسفل" else "Scroll down",
-                    tint = Color.White,
+                    tint = CyanAccent,
                     modifier = Modifier.size(26.dp)
                 )
             }
@@ -1485,9 +1464,9 @@ private object TranscriptKeywordVisualTransformation : VisualTransformation {
             orderIdRegex.findAll(raw).forEach { match ->
                 addStyle(
                     style = SpanStyle(
-                        color = Color.White,
+                        color = CyanAccent,
                         fontWeight = FontWeight.Bold,
-                        background = CyanAccent.copy(alpha = 0.22f)
+                        background = CyanAccent.copy(alpha = 0.16f)
                     ),
                     start = match.range.first,
                     end = match.range.last + 1
@@ -1496,9 +1475,9 @@ private object TranscriptKeywordVisualTransformation : VisualTransformation {
             businessRegex.findAll(raw).forEach { match ->
                 addStyle(
                     style = SpanStyle(
-                        color = Color.White,
+                        color = AmberAccent,
                         fontWeight = FontWeight.Bold,
-                        background = AmberAccent.copy(alpha = 0.22f)
+                        background = AmberAccent.copy(alpha = 0.16f)
                     ),
                     start = match.range.first,
                     end = match.range.last + 1
@@ -1507,9 +1486,9 @@ private object TranscriptKeywordVisualTransformation : VisualTransformation {
             urgentRegex.findAll(raw).forEach { match ->
                 addStyle(
                     style = SpanStyle(
-                        color = Color.White,
+                        color = Color(0xFFFF7A7A),
                         fontWeight = FontWeight.Bold,
-                        background = Color(0xFFFF5252).copy(alpha = 0.26f)
+                        background = Color(0xFFFF5252).copy(alpha = 0.18f)
                     ),
                     start = match.range.first,
                     end = match.range.last + 1
@@ -1542,7 +1521,7 @@ private fun HighlightLegendChip(
         )
         Text(
             text = label,
-            color = Color.White,
+            color = color,
             fontSize = 11.sp,
             fontWeight = FontWeight.SemiBold
         )

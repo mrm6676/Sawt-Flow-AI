@@ -1324,11 +1324,11 @@ function lookupOrder(orderId, preserveApproval = false) {
 
   box.innerHTML = `
     <div style="display:flex; justify-content:space-between; align-items:center;">
-      <strong class="mono" style="color:#FFFFFF; font-size:1.1rem;">${order.id}</strong>
+      <strong class="mono" style="color:var(--cyan); font-size:1.1rem;">${order.id}</strong>
       <span class="${getOrderStatusClass(order.status)}">${order.status}</span>
     </div>
     <div><strong>${state.lang === 'ar' ? 'المدينة:' : 'City:'}</strong> ${order.city} · <strong>ETA:</strong> ${order.eta}</div>
-    <div style="color: #FFFFFF; font-size:0.9rem;">${order.lastScan}</div>
+    <div style="color: var(--text-muted); font-size:0.9rem;">${order.lastScan}</div>
   `;
 
   if (state.intent === 'cancel') {
@@ -1469,12 +1469,12 @@ function renderOrdersPanel() {
       <div class="item-card-top">
         <label class="order-id-wrap">
           <input type="checkbox" class="order-checkbox" data-order-id="${o.id}" ${isChecked ? 'checked' : ''} aria-label="Select order ${o.id}" />
-          <strong class="mono" style="color: #FFFFFF; font-size: 1.05rem;">${o.id}</strong>
+          <strong class="mono" style="color: var(--cyan); font-size: 1.05rem;">${o.id}</strong>
         </label>
         <span class="${getOrderStatusClass(o.status)}">${o.status}</span>
       </div>
       <div style="font-size:0.9rem;">${o.city} · ${o.eta}</div>
-      <div style="color: #FFFFFF; font-size:0.85rem;">${o.lastScan}</div>
+      <div style="color: var(--text-muted); font-size:0.85rem;">${o.lastScan}</div>
       <button class="btn btn-outline load-order-btn" type="button" style="margin-top:auto;">
         ${state.lang === 'ar' ? 'اختبار في الاستوديو ←' : 'Load into Studio →'}
       </button>
@@ -1551,7 +1551,7 @@ function renderHistory() {
       </div>
       <p style="font-size:0.95rem;">${item.transcript}</p>
       <div class="item-card-top" style="margin-top:auto;">
-        <span class="mono" style="color:#FFFFFF; font-size:0.85rem;">${item.orderId || ''}</span>
+        <span class="mono" style="color:var(--amber); font-size:0.85rem;">${item.orderId || ''}</span>
         <button class="btn btn-cyan" type="button" style="padding:0.45rem 0.85rem; font-size:0.82rem;">
           ${state.lang === 'ar' ? 'فتح بالاستوديو' : 'Load'}
         </button>
@@ -1581,10 +1581,10 @@ function logEvent(type, orderId, actor, details) {
     div.className = 'item-card';
     div.innerHTML = `
       <div class="item-card-top">
-        <strong class="mono" style="color:#FFFFFF;">${entry.type}</strong>
-        <span class="mono" style="color:#FFFFFF; font-size:0.8rem;">${entry.time} · ${entry.actor}</span>
+        <strong class="mono" style="color:var(--cyan);">${entry.type}</strong>
+        <span class="mono" style="color:var(--text-muted); font-size:0.8rem;">${entry.time} · ${entry.actor}</span>
       </div>
-      <div style="font-size:0.92rem;">${entry.details} <span class="mono" style="color:#FFFFFF;">[${entry.orderId}]</span></div>
+      <div style="font-size:0.92rem;">${entry.details} <span class="mono" style="color:var(--amber);">[${entry.orderId}]</span></div>
     `;
     container.appendChild(div);
   });
