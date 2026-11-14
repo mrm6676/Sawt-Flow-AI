@@ -2,11 +2,15 @@ package com.example.sawtflow.ui.viewmodel
 
 import android.app.Application
 import android.content.Context
+import android.media.MediaPlayer
+import android.media.MediaRecorder
 import android.net.Uri
+import android.os.Build
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
+import java.io.File
 import com.example.sawtflow.data.local.AppDatabase
 import com.example.sawtflow.data.local.SavedTranscript
 import com.example.sawtflow.data.local.TranscriptHistoryRepository
@@ -147,15 +151,60 @@ class SawtFlowViewModel(
         analyzeCurrentTranscript(text)
     }
 
-    fun toggleRecording() {
+    private var mediaRecorder: MediaRecorder? = null
+    private var recordedAudioFile: File? = null
+    private var mediaPlayer: MediaPlayer? = null
+
+    fun toggleRecording(context: Context? = null) {
         if (_uiState.value.isRecording) {
-            stopRecording()
+            stopRecording(context)
         } else {
-            startRecording()
+            startRecording(context)
         }
     }
 
-    private fun startRecording() {
+    fun onRecordingPermissionDenied() {
+        val isAr = _uiState.value.language == AppLanguage.AR
+        _uiState.value = _uiState.value.copy(
+            isRecording = false,
+            audioStatusMessage = if (isAr) {
+                "يلزم منح إذن الميكروفون للتسجيل الصوتي المباشر"
+            } else {
+                "Microphone permission is required for live recording"
+            }
+        )
+    }
+
+    private fun startRecording(context: Context? = null) {
+        releaseMediaRecorder()
+        recordedAudioFile = null
+        if (context != null) {
+            try {
+                val outFile = File(context.cacheDir, "live_voice_${System.currentTimeMillis()}.m4a")
+                val recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    MediaRecorder(context)
+                } else {
+                    @Suppress("DEPRECATION")
+                    MediaRecorder()
+                }
+                recorder.apply {
+                    setAudioSource(MediaRecorder.AudioSource.MIC)
+                    setOutputFormat(MediaRecorder.OutputFormat.MPEG_4)
+                    setAudioEncoder(MediaRecorder.AudioEncoder.AAC)
+                    setAudioEncodingBitRate(128_000)
+                    setAudioSamplingRate(44_100)
+                    setOutputFile(outFile.absolutePath)
+                    prepare()
+                    start()
+                }
+                mediaRecorder = recorder
+                recordedAudioFile = outFile
+            } catch (_: Exception) {
+                releaseMediaRecorder()
+                recordedAudioFile = null
+            }
+        }
+
         _uiState.value = _uiState.value.copy(
             isRecording = true,
             recordSeconds = 0,
@@ -175,9 +224,38 @@ class SawtFlowViewModel(
         }
     }
 
-    private fun stopRecording() {
+    private fun releaseMediaRecorder() {
+        try {
+            mediaRecorder?.apply {
+                try { stop() } catch (_: Exception) {}
+                reset()
+                release()
+            }
+        } catch (_: Exception) {
+        } finally {
+            mediaRecorder = null
+        }
+    }
+
+    private fun stopRecording(context: Context? = null) {
         recordingJob?.cancel()
+        releaseMediaRecorder()
         val timeStr = String.format("%02d:%02d", _uiState.value.recordSeconds / 60, _uiState.value.recordSeconds % 60)
+        val capturedFile = recordedAudioFile
+        if (capturedFile != null && capturedFile.exists() && capturedFile.length() > 0L) {
+            val sizeKB = (capturedFile.length() / 1024f).coerceAtLeast(1f)
+            val sizeStr = if (sizeKB >= 1024f) String.format("%.1f MB", sizeKB / 1024f) else "${sizeKB.toInt()} KB"
+            val fileUri = Uri.fromFile(capturedFile).toString()
+            onAudioFileUploaded(
+                name = capturedFile.name,
+                sizeStr = sizeStr,
+                uriString = fileUri,
+                context = context ?: getApplication()
+            )
+            _uiState.value = _uiState.value.copy(isRecording = false)
+            return
+        }
+
         val isAr = _uiState.value.language == AppLanguage.AR
         val ticketId = extractFlexibleOrderId(_uiState.value.transcriptText)
             ?: "VF-${((System.currentTimeMillis() % 9000) + 1000)}"
@@ -419,16 +497,27 @@ class SawtFlowViewModel(
 
     private var playbackJob: Job? = null
 
-    fun onAudioFileUploaded(name: String, sizeStr: String, uriString: String? = null) {
+    fun onAudioFileUploaded(
+        name: String,
+        sizeStr: String,
+        uriString: String? = null,
+        context: Context? = null
+    ) {
+        releaseMediaPlayer()
         val isAr = _uiState.value.language == AppLanguage.AR
         val digitsOnly = name.filter { it.isDigit() }
         val resolvedOrderId = extractFlexibleOrderId(name)
             ?: if (digitsOnly.length >= 3) "VF-${digitsOnly.takeLast(4).padStart(4, '0')}" else "VF-${((System.currentTimeMillis() % 9000) + 1000)}"
 
-        val flowTranscript = if (isAr) {
-            "تم رفع تسجيل صوتي ($name) بخصوص الطلب $resolvedOrderId لمتابعة الحالة والتوصيل."
+        val hasRealUri = !uriString.isNullOrBlank()
+        val initialTranscript = if (hasRealUri) {
+            if (isAr) "جارٍ تفريغ الكلام من التسجيل الصوتي ($name)..." else "Transcribing spoken audio from $name..."
         } else {
-            "Uploaded voice recording ($name) for order $resolvedOrderId to review status and delivery."
+            if (isAr) {
+                "تم رفع تسجيل صوتي ($name) بخصوص الطلب $resolvedOrderId لمتابعة الحالة والتوصيل."
+            } else {
+                "Uploaded voice recording ($name) for order $resolvedOrderId to review status and delivery."
+            }
         }
 
         _uiState.value = _uiState.value.copy(
@@ -439,15 +528,21 @@ class SawtFlowViewModel(
             isPlayingAudio = false,
             playbackProgress = 0f,
             playbackPosition = "00:00",
-            transcriptText = flowTranscript,
+            transcriptText = initialTranscript,
             extractedOrderId = resolvedOrderId,
             orderInputId = resolvedOrderId,
-            audioStatusMessage = if (isAr) "تم تحميل الصوت: $name · جاهز للمعاينة والاعتماد" else "Audio loaded: $name · preview & approve",
+            audioStatusMessage = if (hasRealUri) {
+                if (isAr) "تم تحميل $name · جارٍ استخراج نص الصوت..." else "Loaded $name · extracting transcript..."
+            } else {
+                if (isAr) "تم تحميل الصوت: $name · جاهز للمعاينة والاعتماد" else "Audio loaded: $name · preview & approve"
+            },
             confidence = "97.8%",
             isApproved = false,
             isRetrieved = false
         )
-        analyzeCurrentTranscript(flowTranscript)
+        if (!hasRealUri) {
+            analyzeCurrentTranscript(initialTranscript)
+        }
         retrieveOrder(resolvedOrderId)
 
         repository.logEvent(
@@ -456,6 +551,10 @@ class SawtFlowViewModel(
             actor = "user",
             details = "Uploaded & processed voice recording: $name ($sizeStr)"
         )
+
+        if (hasRealUri) {
+            transcribeAudioWithGemini(context ?: getApplication())
+        }
     }
 
     fun toggleAudioPlayback() {
@@ -466,9 +565,64 @@ class SawtFlowViewModel(
         }
     }
 
+    private fun releaseMediaPlayer() {
+        try {
+            mediaPlayer?.apply {
+                if (isPlaying) stop()
+                reset()
+                release()
+            }
+        } catch (_: Exception) {
+        } finally {
+            mediaPlayer = null
+        }
+    }
+
     private fun startAudioPlayback() {
-        _uiState.value = _uiState.value.copy(isPlayingAudio = true)
         playbackJob?.cancel()
+        releaseMediaPlayer()
+        val uriStr = _uiState.value.uploadedAudioUri
+        if (!uriStr.isNullOrBlank()) {
+            try {
+                val mp = MediaPlayer().apply {
+                    setDataSource(getApplication(), Uri.parse(uriStr))
+                    prepare()
+                }
+                val totalMs = mp.duration.coerceAtLeast(1000)
+                val totalSec = totalMs / 1000
+                mediaPlayer = mp
+                mp.setOnCompletionListener {
+                    playbackJob?.cancel()
+                    releaseMediaPlayer()
+                    _uiState.value = _uiState.value.copy(
+                        isPlayingAudio = false,
+                        playbackProgress = 0f,
+                        playbackPosition = "00:00"
+                    )
+                }
+                mp.start()
+                _uiState.value = _uiState.value.copy(
+                    isPlayingAudio = true,
+                    playbackDuration = String.format("%02d:%02d", totalSec / 60, totalSec % 60)
+                )
+                playbackJob = viewModelScope.launch {
+                    while (_uiState.value.isPlayingAudio && mediaPlayer != null) {
+                        val posMs = try { mediaPlayer?.currentPosition ?: 0 } catch (_: Exception) { 0 }
+                        val posSec = posMs / 1000
+                        _uiState.value = _uiState.value.copy(
+                            playbackProgress = (posMs.toFloat() / totalMs.toFloat()).coerceIn(0f, 1f),
+                            playbackPosition = String.format("%02d:%02d", posSec / 60, posSec % 60)
+                        )
+                        delay(250)
+                    }
+                }
+                return
+            } catch (_: Exception) {
+                releaseMediaPlayer()
+            }
+        }
+
+        _uiState.value = _uiState.value.copy(isPlayingAudio = true)
         playbackJob = viewModelScope.launch {
             val totalSeconds = 18
             var currentSec = (_uiState.value.playbackProgress * totalSeconds).toInt()
@@ -494,11 +648,13 @@ class SawtFlowViewModel(
 
     private fun pauseAudioPlayback() {
         playbackJob?.cancel()
+        releaseMediaPlayer()
         _uiState.value = _uiState.value.copy(isPlayingAudio = false)
     }
 
     fun clearUploadedAudio() {
         playbackJob?.cancel()
+        releaseMediaPlayer()
         val isAr = _uiState.value.language == AppLanguage.AR
         _uiState.value = _uiState.value.copy(
             uploadedAudioName = null,
@@ -510,6 +666,14 @@ class SawtFlowViewModel(
             playbackPosition = "00:00",
             audioStatusMessage = if (isAr) "تمت إزالة الصوت المرفوع" else "Uploaded audio cleared"
         )
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        recordingJob?.cancel()
+        playbackJob?.cancel()
+        releaseMediaRecorder()
+        releaseMediaPlayer()
     }
 
     fun approveUploadedAudio() {
@@ -736,6 +900,15 @@ class SawtFlowViewModel(
                 activeOrder = repository.findOrder(activeId)
             )
         }
+    }
+
+    fun logOrdersCsvExported(orderCount: Int) {
+        repository.logEvent(
+            eventType = "orders.csv_exported",
+            orderId = "$orderCount orders",
+            actor = "human.operator",
+            details = "Exported $orderCount visible order(s) to CSV file"
+        )
     }
 
     companion object {

@@ -117,6 +117,28 @@ body {
   cursor: pointer;
 }
 
+.back-home-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+  background: var(--navy-surface);
+  color: #fff;
+  border: 1px solid var(--navy-border);
+  border-radius: 999px;
+  padding: 0.45rem 0.95rem;
+  font-family: inherit;
+  font-size: 0.85rem;
+  font-weight: 700;
+  text-decoration: none;
+  transition: all 0.2s ease;
+}
+
+.back-home-btn:hover {
+  border-color: var(--cyan);
+  color: var(--cyan);
+  background: rgba(56, 216, 255, 0.1);
+}
+
 .container {
   flex: 1;
   max-width: 1080px;
@@ -548,6 +570,120 @@ audio {
 
 .textarea:focus, .input:focus {
   border-color: var(--cyan);
+}
+
+.audio-action-row {
+  align-items: stretch;
+}
+
+.select-compact {
+  width: auto;
+  min-width: 155px;
+  padding: 0.55rem 0.75rem;
+  font-size: 0.84rem;
+  margin-bottom: 0;
+}
+
+.btn-compact {
+  padding: 0.55rem 0.95rem;
+  font-size: 0.84rem;
+  white-space: nowrap;
+}
+
+.transcription-status-bar {
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  flex-wrap: wrap;
+  padding: 0.58rem 0.85rem;
+  margin-bottom: 0.65rem;
+  border-radius: 10px;
+  background: rgba(17, 40, 82, 0.85);
+  border: 1px solid rgba(56, 216, 255, 0.35);
+  font-size: 0.82rem;
+}
+
+.transcription-status-bar.show {
+  display: flex;
+}
+
+.transcription-status-bar.is-done {
+  border-color: rgba(46, 213, 115, 0.45);
+  background: rgba(46, 213, 115, 0.1);
+}
+
+.transcription-status-bar.is-error {
+  border-color: rgba(255, 177, 68, 0.48);
+  background: rgba(255, 177, 68, 0.1);
+}
+
+.tsb-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--cyan);
+  font-weight: 600;
+}
+
+.transcription-status-bar.is-done .tsb-main {
+  color: #63F2A1;
+}
+
+.transcription-status-bar.is-error .tsb-main {
+  color: var(--amber);
+}
+
+.tsb-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.transcription-status-bar.is-loading .tsb-dot {
+  animation: tsbPulse 1s ease-in-out infinite alternate;
+}
+
+@keyframes tsbPulse {
+  from { opacity: 0.35; transform: scale(0.85); }
+  to { opacity: 1; transform: scale(1.2); }
+}
+
+.tsb-key-btn {
+  background: rgba(7, 20, 45, 0.75);
+  color: var(--text-muted);
+  border: 1px solid var(--navy-border);
+  border-radius: 999px;
+  padding: 0.25rem 0.65rem;
+  font-family: inherit;
+  font-size: 0.74rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.tsb-key-btn:hover {
+  border-color: var(--cyan);
+  color: #fff;
+}
+
+.gemini-key-drawer {
+  display: none;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 0.75rem;
+}
+
+.gemini-key-drawer.show {
+  display: flex;
+}
+
+.gemini-key-drawer .input {
+  margin-bottom: 0;
+  padding: 0.55rem 0.85rem;
+  font-size: 0.85rem;
 }
 
 .transcript-editor-wrap {

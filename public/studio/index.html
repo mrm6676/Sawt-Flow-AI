@@ -5,6 +5,9 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>SawtFlow Studio | Arabic Voice Intelligence Workspace</title>
   <meta name="description" content="SawtFlow Studio: مساحة عمل تفاعلية لتحويل التسجيلات الصوتية العربية إلى قرارات وإجراءات تجارية موثوقة." />
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+  <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32.png" />
+  <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
   <link rel="preconnect" href="https://fonts.googleapis.com" />
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
   <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&family=Outfit:wght@400;600;800&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
@@ -31,6 +34,13 @@
         <button class="tab-btn" data-tab="orders" data-ar="الطلبات" data-en="Orders">الطلبات</button>
         <button class="tab-btn" data-tab="audit" data-ar="التدقيق" data-en="Audit Log">التدقيق</button>
       </nav>
+      <a href="/" class="back-home-btn" id="backToMainBtn">
+        <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+          <path d="M3 10.5L12 3l9 7.5"></path>
+          <path d="M5 9.5V20a1 1 0 0 0 1 1h4v-6h4v6h4a1 1 0 0 0 1-1V9.5"></path>
+        </svg>
+        <span data-ar="العودة للرئيسية" data-en="Back to Main Page">العودة للرئيسية</span>
+      </a>
       <button class="lang-btn" id="langToggleBtn" type="button">EN</button>
     </div>
   </header>
@@ -122,9 +132,17 @@
               <span class="waveform-label mono" data-ar="جارٍ التشغيل" data-en="PLAYING">جارٍ التشغيل</span>
             </div>
             <audio id="audioPreview" controls></audio>
-            <div class="btn-row">
+            <div class="btn-row audio-action-row">
               <button class="btn btn-green" id="approveAudioBtn" type="button" data-ar="✓ اعتماد التسجيل الصوتي" data-en="✓ Approve Voice Recording">
                 ✓ اعتماد التسجيل الصوتي
+              </button>
+              <select id="speechLangSelect" class="select-input select-compact" aria-label="Speech transcription language">
+                <option value="auto" data-ar="تلقائي (عربي / إنجليزي)" data-en="Auto (AR / EN)">تلقائي (عربي / إنجليزي)</option>
+                <option value="arabic" data-ar="العربية" data-en="Arabic">العربية</option>
+                <option value="english" data-ar="الإنجليزية" data-en="English">الإنجليزية</option>
+              </select>
+              <button class="btn btn-cyan" id="transcribeAudioBtn" type="button" data-ar="✨ تفريغ الصوت" data-en="✨ Transcribe Audio">
+                ✨ تفريغ الصوت
               </button>
             </div>
           </div>
@@ -149,6 +167,23 @@
           <p class="step-desc" data-ar="راجع نص المحادثة المفرّغ، عدّله عند الحاجة، واحفظه في السجل المحلي." data-en="Review the transcribed conversation, edit if needed, and save it to your local history.">
             راجع نص المحادثة المفرّغ، عدّله عند الحاجة، واحفظه في السجل المحلي.
           </p>
+
+          <div class="transcription-status-bar" id="transcriptionStatusBar" aria-live="polite">
+            <div class="tsb-main">
+              <span class="tsb-dot"></span>
+              <span class="tsb-text" id="transcriptionStatusText"></span>
+            </div>
+            <button type="button" class="tsb-key-btn" id="geminiKeyToggleBtn" data-ar="🔑 مفتاح Gemini (اختياري)" data-en="🔑 Gemini Key (Optional)">
+              🔑 مفتاح Gemini (اختياري)
+            </button>
+          </div>
+
+          <div class="gemini-key-drawer" id="geminiKeyDrawer">
+            <input type="password" id="geminiApiKeyInput" class="input mono" placeholder="AIza..." autocomplete="off" />
+            <button type="button" class="btn btn-cyan btn-compact" id="saveGeminiKeyBtn" data-ar="حفظ وإعادة التفريغ" data-en="Save & Transcribe">
+              حفظ وإعادة التفريغ
+            </button>
+          </div>
 
           <div class="transcript-editor-wrap">
             <div class="transcript-backdrop" id="transcriptBackdrop" aria-hidden="true">
@@ -251,6 +286,9 @@
     <section class="panel" id="panel-orders">
       <div class="step-top" style="margin-bottom: 1rem;">
         <h2 id="ordersPanelHeading" data-ar="قاعدة بيانات الطلبات" data-en="Operational Orders Database">قاعدة بيانات الطلبات</h2>
+        <button class="btn btn-outline btn-compact" id="downloadOrdersCsvBtn" type="button" data-ar="⬇ تحميل CSV" data-en="⬇ Download CSV">
+          ⬇ تحميل CSV
+        </button>
       </div>
 
       <div class="batch-toolbar" id="ordersBatchToolbar">

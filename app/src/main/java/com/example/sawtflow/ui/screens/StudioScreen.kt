@@ -1,9 +1,12 @@
 package com.example.sawtflow.ui.screens
 
+import android.Manifest
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.provider.OpenableColumns
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.core.content.ContextCompat
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -31,6 +34,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.AudioFile
 import androidx.compose.material.icons.filled.AutoAwesome
 import androidx.compose.material.icons.filled.Check
@@ -121,6 +125,16 @@ fun StudioScreen(
     }
 
     val context = LocalContext.current
+    val recordAudioPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { granted ->
+        if (granted) {
+            viewModel.toggleRecording(context)
+        } else {
+            viewModel.onRecordingPermissionDenied()
+        }
+    }
+
     val audioPickerLauncher = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent()
     ) { uri: Uri? ->
@@ -140,7 +154,7 @@ fun StudioScreen(
                     }
                 }
             } catch (_: Exception) {}
-            viewModel.onAudioFileUploaded(fileName, fileSizeStr, it.toString())
+            viewModel.onAudioFileUploaded(fileName, fileSizeStr, it.toString(), context)
         }
     }
 
@@ -154,15 +168,46 @@ fun StudioScreen(
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
         // Workspace Eyebrow & Hero Header
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = if (isAr) "استوديو SAWTFLOW / مساحة الذكاء الصوتي" else "SAWTFLOW STUDIO / VOICE INTELLIGENCE WORKSPACE",
-                color = CyanAccent,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
+        Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = if (isAr) "استوديو SAWTFLOW / مساحة الذكاء الصوتي" else "SAWTFLOW STUDIO / VOICE INTELLIGENCE WORKSPACE",
+                    color = CyanAccent,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp,
+                    modifier = Modifier.weight(1f)
+                )
+                Spacer(modifier = Modifier.width(8.dp))
+                OutlinedButton(
+                    onClick = { viewModel.selectTab(AppTab.OVERVIEW) },
+                    modifier = Modifier
+                        .heightIn(min = 48.dp)
+                        .testTag("back_to_main_page_button"),
+                    shape = RoundedCornerShape(999.dp),
+                    colors = ButtonDefaults.outlinedButtonColors(
+                        containerColor = NavySurface,
+                        contentColor = CyanAccent
+                    )
+                ) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = if (isAr) "العودة للرئيسية" else "Back to Main Page",
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Spacer(modifier = Modifier.width(6.dp))
+                    Text(
+                        text = if (isAr) "الرئيسية" else "Main Page",
+                        fontSize = 12.sp,
+                        fontWeight = FontWeight.Bold
+                    )
+                }
+            }
             Text(
                 text = if (isAr) "حوّل الصوت إلى الإجراء الموثوق التالي." else "Turn voice into the next right action.",
                 color = Color.White,
@@ -542,7 +587,21 @@ fun StudioScreen(
                     horizontalArrangement = Arrangement.spacedBy(10.dp)
                 ) {
                     Button(
-                        onClick = { viewModel.toggleRecording() },
+                        onClick = {
+                            if (state.isRecording) {
+                                viewModel.toggleRecording(context)
+                            } else {
+                                val hasMicPerm = ContextCompat.checkSelfPermission(
+                                    context,
+                                    Manifest.permission.RECORD_AUDIO
+                                ) == PackageManager.PERMISSION_GRANTED
+                                if (hasMicPerm) {
+                                    viewModel.toggleRecording(context)
+                                } else {
+                                    recordAudioPermissionLauncher.launch(Manifest.permission.RECORD_AUDIO)
+                                }
+                            }
+                        },
                         modifier = Modifier
                             .weight(1f)
                             .testTag("record_voice_button"),
@@ -676,6 +735,28 @@ fun StudioScreen(
                             text = if (isAr) "تفريغ عبر Gemini ✨" else "Transcribe with Gemini ✨",
                             fontSize = 11.sp,
                             fontWeight = FontWeight.Bold
+                        )
+                    }
+                }
+
+                AnimatedVisibility(visible = state.isTranscribingWithGemini) {
+                    Column(verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                        LinearProgressIndicator(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(4.dp)
+                                .clip(RoundedCornerShape(2.dp)),
+                            color = AmberAccent,
+                            trackColor = NavyLight
+                        )
+                        Text(
+                            text = if (isAr)
+                                "جارٍ استخراج النص الصوتي من التسجيل..."
+                            else
+                                "Transcribing spoken content from voice recording...",
+                            color = AmberAccent,
+                            fontSize = 11.sp,
+                            fontFamily = FontFamily.Monospace
                         )
                     }
                 }

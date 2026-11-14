@@ -1,5 +1,7 @@
 package com.example.sawtflow.ui.screens
 
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -25,7 +27,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowForward
 import androidx.compose.material.icons.filled.ArrowDropDown
 import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Download
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.ui.platform.LocalContext
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
@@ -97,6 +104,32 @@ fun OrdersScreen(
     }
     val allFilteredSelected = filteredOrders.isNotEmpty() && filteredOrders.all { it.id in selectedOrderIds }
 
+    val context = LocalContext.current
+    val createCsvLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.CreateDocument("text/csv")
+    ) { uri ->
+        if (uri != null) {
+            try {
+                val csvPayload = "\uFEFF" + buildOrdersCsv(filteredOrders)
+                context.contentResolver.openOutputStream(uri)?.use { out ->
+                    out.write(csvPayload.toByteArray(Charsets.UTF_8))
+                }
+                viewModel.logOrdersCsvExported(filteredOrders.size)
+                batchFeedbackMessage = if (isAr) {
+                    "تم تصدير ${filteredOrders.size} طلبات إلى ملف CSV بنجاح ✓"
+                } else {
+                    "Exported ${filteredOrders.size} visible order(s) to CSV ✓"
+                }
+            } catch (e: Exception) {
+                batchFeedbackMessage = if (isAr) {
+                    "تعذر تصدير ملف CSV: ${e.localizedMessage ?: "خطأ"}"
+                } else {
+                    "CSV export failed: ${e.localizedMessage ?: "error"}"
+                }
+            }
+        }
+    }
+
     Column(
         modifier = modifier
             .fillMaxSize()
@@ -104,29 +137,68 @@ fun OrdersScreen(
             .padding(16.dp),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
-            Text(
-                text = if (isAr) "قاعدة بيانات الطلبات / ${orders.size} سجلاً موثقاً" else "OPERATIONAL ORDERS DATABASE / ${orders.size} RECORDS",
-                color = CyanAccent,
-                fontFamily = FontFamily.Monospace,
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                letterSpacing = 1.sp
-            )
-            Text(
-                text = if (isAr) "سجلات العمليات والأدلة" else "Operational Evidence Base",
-                color = Color.White,
-                fontSize = 22.sp,
-                fontWeight = FontWeight.ExtraBold
-            )
-            Text(
-                text = if (isAr)
-                    "انقر على أي طلب للبحث فيه مباشرة في استوديو SawtFlow والتحقق من الاستجابة."
-                else
-                    "Tap any order to test lookup immediately in SawtFlow Studio.",
-                color = Color.White.copy(alpha = 0.7f),
-                fontSize = 13.sp
-            )
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.Top
+        ) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    text = if (isAr) "قاعدة بيانات الطلبات / ${orders.size} سجلاً موثقاً" else "OPERATIONAL ORDERS DATABASE / ${orders.size} RECORDS",
+                    color = CyanAccent,
+                    fontFamily = FontFamily.Monospace,
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Bold,
+                    letterSpacing = 1.sp
+                )
+                Text(
+                    text = if (isAr) "سجلات العمليات والأدلة" else "Operational Evidence Base",
+                    color = Color.White,
+                    fontSize = 22.sp,
+                    fontWeight = FontWeight.ExtraBold
+                )
+                Text(
+                    text = if (isAr)
+                        "انقر على أي طلب للبحث فيه مباشرة في استوديو SawtFlow والتحقق من الاستجابة."
+                    else
+                        "Tap any order to test lookup immediately in SawtFlow Studio.",
+                    color = Color.White.copy(alpha = 0.7f),
+                    fontSize = 13.sp
+                )
+            }
+
+            Spacer(modifier = Modifier.width(8.dp))
+
+            OutlinedButton(
+                onClick = {
+                    val dateStamp = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
+                    createCsvLauncher.launch("sawtflow-orders-$dateStamp.csv")
+                },
+                enabled = filteredOrders.isNotEmpty(),
+                modifier = Modifier
+                    .heightIn(min = 48.dp)
+                    .testTag("download_orders_csv_button"),
+                shape = RoundedCornerShape(10.dp),
+                colors = ButtonDefaults.outlinedButtonColors(
+                    containerColor = NavySurface,
+                    contentColor = CyanAccent
+                )
+            ) {
+                Icon(
+                    imageVector = Icons.Default.Download,
+                    contentDescription = if (isAr) "تحميل CSV" else "Download CSV",
+                    modifier = Modifier.size(16.dp)
+                )
+                Spacer(modifier = Modifier.width(6.dp))
+                Text(
+                    text = if (isAr) "CSV" else "Download CSV",
+                    fontSize = 12.sp,
+                    fontWeight = FontWeight.Bold
+                )
+            }
         }
 
         // Search bar
@@ -545,4 +617,28 @@ fun OrderItemCard(
             }
         }
     }
+}
+
+private fun escapeCsvCell(value: String?): String {
+    val raw = value ?: ""
+    return if (raw.contains(',') || raw.contains('"') || raw.contains('\n') || raw.contains('\r')) {
+        "\"${raw.replace("\"", "\"\"")}\""
+    } else {
+        raw
+    }
+}
+
+private fun buildOrdersCsv(orders: List<Order>): String {
+    val sb = StringBuilder()
+    sb.append("Order ID,Status,City,ETA,Last Scan,Response (EN),Response (AR)\r\n")
+    for (o in orders) {
+        sb.append(escapeCsvCell(o.id)).append(',')
+        sb.append(escapeCsvCell(o.status)).append(',')
+        sb.append(escapeCsvCell(o.city)).append(',')
+        sb.append(escapeCsvCell(o.eta)).append(',')
+        sb.append(escapeCsvCell(o.lastScan)).append(',')
+        sb.append(escapeCsvCell(o.response)).append(',')
+        sb.append(escapeCsvCell(o.responseAr)).append("\r\n")
+    }
+    return sb.toString()
 }

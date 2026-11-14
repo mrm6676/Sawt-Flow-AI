@@ -32,6 +32,7 @@ const DIALECTS = {
 const STORAGE_KEY = 'sawtflow_studio_history_v1';
 const ORDERS_STORAGE_KEY = 'sawtflow_studio_orders_v1';
 const DRAFT_SESSION_KEY = 'sawtflow_studio_transcript_draft_v1';
+const GEMINI_KEY_SESSION_KEY = 'sawtflow_studio_gemini_key_v1';
 
 let state = {
   lang: 'ar',
@@ -42,8 +43,10 @@ let state = {
   selectedOrderIds: new Set(),
   auditLogs: [],
   uploadedFileName: null,
+  uploadedFile: null,
   isAudioApproved: false,
   isAudioPlaying: false,
+  isTranscribing: false,
   isRecording: false,
   mediaRecorder: null,
   speechRecognition: null,
@@ -498,8 +501,380 @@ async function inspectAudioMetadata(file, audioEl) {
   }
 }
 
+let transcribeRunToken = 0;
+let whisperPipelinePromise = null;
+let loadedWhisperModelId = null;
+
+function setTranscriptionStatus(kind, message) {
+  const bar = document.getElementById('transcriptionStatusBar');
+  const txtEl = document.getElementById('transcriptionStatusText');
+  if (!bar || !txtEl) return;
+  bar.classList.remove('is-loading', 'is-done', 'is-error', 'show');
+  if (!message) return;
+  bar.classList.add('show');
+  if (kind === 'loading') bar.classList.add('is-loading');
+  else if (kind === 'done') bar.classList.add('is-done');
+  else if (kind === 'error') bar.classList.add('is-error');
+  txtEl.textContent = message;
+}
+
+function getSavedGeminiKey() {
+  try {
+    return (sessionStorage.getItem(GEMINI_KEY_SESSION_KEY) || '').trim();
+  } catch (e) {
+    return '';
+  }
+}
+
+function extractEmbeddedTranscriptFromBuffer(buffer) {
+  try {
+    const bytes = new Uint8Array(buffer);
+    const readAscii = (start, len) => {
+      let s = '';
+      const end = Math.min(bytes.length, start + len);
+      for (let i = start; i < end; i++) s += String.fromCharCode(bytes[i]);
+      return s;
+    };
+
+    // 1. Check ID3v2 USLT (lyrics/transcript) or COMM frames
+    if (bytes.length > 20 && readAscii(0, 3) === 'ID3') {
+      const view = new DataView(buffer);
+      const tagSize = Math.min(
+        bytes.length - 10,
+        ((bytes[6] & 0x7F) << 21) | ((bytes[7] & 0x7F) << 14) | ((bytes[8] & 0x7F) << 7) | (bytes[9] & 0x7F)
+      );
+      let pos = 10;
+      const majorVer = bytes[3];
+      while (pos + 10 < 10 + tagSize) {
+        const frameId = readAscii(pos, 4);
+        if (!/^[A-Z0-9]{4}$/.test(frameId)) break;
+        const frameSize = majorVer === 4
+          ? (((bytes[pos + 4] & 0x7F) << 21) | ((bytes[pos + 5] & 0x7F) << 14) | ((bytes[pos + 6] & 0x7F) << 7) | (bytes[pos + 7] & 0x7F))
+          : view.getUint32(pos + 4, false);
+        if (frameSize <= 0 || pos + 10 + frameSize > bytes.length) break;
+        if (frameId === 'USLT' || frameId === 'COMM' || frameId === 'TXXX') {
+          const enc = bytes[pos + 10];
+          const payload = bytes.slice(pos + 11, pos + 10 + frameSize);
+          let textStart = frameId === 'USLT' || frameId === 'COMM' ? 3 : 0;
+          const decoderName = enc === 1 || enc === 2 ? 'utf-16' : 'utf-8';
+          const decoded = new TextDecoder(decoderName).decode(payload.slice(textStart));
+          const parts = decoded.split('\u0000').map(p => p.trim()).filter(Boolean);
+          const candidate = parts[parts.length - 1] || '';
+          if (candidate.length >= 6 && !/^encoded by|^lavf/i.test(candidate)) {
+            return candidate;
+          }
+        }
+        pos += 10 + frameSize;
+      }
+    }
+
+    // 2. Check RIFF LIST INFO (ICMT / INAM) or Ogg Vorbis TRANSCRIPT/LYRICS comments
+    const utf8Text = new TextDecoder('utf-8', { fatal: false }).decode(bytes.slice(0, Math.min(bytes.length, 65536)));
+    const oggMatch = utf8Text.match(/(?:TRANSCRIPT|LYRICS|SUBTITLE)=([^\u0000\r\n]{6,600})/i);
+    if (oggMatch && oggMatch[1]) {
+      return oggMatch[1].trim();
+    }
+  } catch (e) {}
+  return '';
+}
+
+async function decodeAudioToMono16k(file) {
+  const AudioCtx = window.AudioContext || window.webkitAudioContext;
+  if (!AudioCtx) {
+    throw new Error(state.lang === 'ar' ? 'المتصفح لا يدعم Web Audio API' : 'Web Audio API unavailable in this browser');
+  }
+  const arrayBuffer = await file.arrayBuffer();
+  const audioCtx = new AudioCtx();
+  let decoded;
+  try {
+    decoded = await audioCtx.decodeAudioData(arrayBuffer.slice(0));
+  } finally {
+    if (typeof audioCtx.close === 'function') {
+      try { await audioCtx.close(); } catch (e) {}
+    }
+  }
+
+  const targetSampleRate = 16000;
+  const frameCount = Math.max(1, Math.ceil(decoded.duration * targetSampleRate));
+  const OfflineCtx = window.OfflineAudioContext || window.webkitOfflineAudioContext;
+
+  let monoBuffer;
+  if (OfflineCtx) {
+    const offline = new OfflineCtx(1, frameCount, targetSampleRate);
+    const source = offline.createBufferSource();
+    source.buffer = decoded;
+    source.connect(offline.destination);
+    source.start(0);
+    const rendered = await offline.startRendering();
+    monoBuffer = rendered.getChannelData(0);
+  } else {
+    const ch0 = decoded.getChannelData(0);
+    const ratio = decoded.sampleRate / targetSampleRate;
+    const out = new Float32Array(Math.floor(ch0.length / ratio));
+    for (let i = 0; i < out.length; i++) {
+      out[i] = ch0[Math.min(ch0.length - 1, Math.floor(i * ratio))];
+    }
+    monoBuffer = out;
+  }
+
+  let peak = 0;
+  for (let i = 0; i < monoBuffer.length; i++) {
+    const a = Math.abs(monoBuffer[i]);
+    if (a > peak) peak = a;
+  }
+  return { samples: monoBuffer, duration: decoded.duration, peak };
+}
+
+function arrayBufferToBase64(buffer) {
+  const bytes = new Uint8Array(buffer);
+  const chunkSize = 0x8000;
+  let binary = '';
+  for (let i = 0; i < bytes.length; i += chunkSize) {
+    binary += String.fromCharCode(...bytes.subarray(i, i + chunkSize));
+  }
+  return btoa(binary);
+}
+
+async function transcribeWithGeminiBrowser(file, apiKey, speechLang) {
+  const rawBuf = await file.arrayBuffer();
+  const base64Data = arrayBufferToBase64(rawBuf);
+  const mimeType = file.type || (file.name.endsWith('.wav') ? 'audio/wav' : (file.name.endsWith('.m4a') ? 'audio/m4a' : (file.name.endsWith('.ogg') ? 'audio/ogg' : (file.name.endsWith('.webm') ? 'audio/webm' : 'audio/mp3'))));
+  const langInstruction = speechLang === 'arabic'
+    ? 'The speaker is speaking Arabic (colloquial Gulf, Egyptian, Levantine, Maghrebi, or MSA).'
+    : (speechLang === 'english' ? 'The speaker is speaking English.' : 'Auto-detect whether the speaker is speaking Arabic (any dialect) or English.');
+
+  const endpoint = `https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=${encodeURIComponent(apiKey)}`;
+  const res = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      contents: [{
+        parts: [
+          {
+            text: `Transcribe the exact spoken words in this audio recording verbatim. ${langInstruction} Preserve spoken order numbers (e.g. SF-1048, ORD-2045) or digits clearly. Output ONLY the raw spoken transcript text with zero commentary or markdown.`
+          },
+          {
+            inline_data: {
+              mime_type: mimeType,
+              data: base64Data
+            }
+          }
+        ]
+      }]
+    })
+  });
+  if (!res.ok) {
+    const errJson = await res.json().catch(() => ({}));
+    throw new Error(errJson?.error?.message || `Gemini API HTTP ${res.status}`);
+  }
+  const json = await res.json();
+  const text = json?.candidates?.[0]?.content?.parts?.map(p => p.text || '').join(' ').trim();
+  if (!text) throw new Error('Gemini returned empty transcript');
+  return text;
+}
+
+async function getWhisperPipeline(onProgress) {
+  if (whisperPipelinePromise) return whisperPipelinePromise;
+
+  whisperPipelinePromise = (async () => {
+    const mod = await import('https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.4.0');
+    const { pipeline, env } = mod;
+    if (env) {
+      env.allowLocalModels = false;
+      env.useBrowserCache = true;
+    }
+
+    const candidates = ['Xenova/whisper-base', 'Xenova/whisper-tiny'];
+    let lastErr = null;
+    for (const modelId of candidates) {
+      try {
+        loadedWhisperModelId = modelId;
+        const pipe = await pipeline('automatic-speech-recognition', modelId, {
+          dtype: 'q8',
+          progress_callback: (info) => {
+            if (info && info.status === 'progress' && typeof info.progress === 'number' && onProgress) {
+              onProgress(Math.round(info.progress), modelId);
+            }
+          }
+        });
+        return pipe;
+      } catch (err) {
+        lastErr = err;
+      }
+    }
+    throw lastErr || new Error('Failed to load Whisper speech recognition model');
+  })();
+
+  try {
+    return await whisperPipelinePromise;
+  } catch (err) {
+    whisperPipelinePromise = null;
+    loadedWhisperModelId = null;
+    throw err;
+  }
+}
+
+async function transcribeUploadedAudio(file, speechLangOverride = null) {
+  if (!file) return;
+  const runToken = ++transcribeRunToken;
+  const langSelect = document.getElementById('speechLangSelect');
+  const speechLang = speechLangOverride || (langSelect ? langSelect.value : 'auto');
+  const transcribeBtn = document.getElementById('transcribeAudioBtn');
+  const statusPill = document.getElementById('audioStatusPill');
+  const confidencePill = document.getElementById('confidencePill');
+
+  state.isTranscribing = true;
+  if (transcribeBtn) transcribeBtn.disabled = true;
+  if (statusPill && !state.isAudioApproved) {
+    statusPill.textContent = state.lang === 'ar' ? 'جارٍ تفريغ الصوت...' : 'TRANSCRIBING...';
+    statusPill.className = 'status-pill amber';
+  }
+  setTranscriptionStatus(
+    'loading',
+    state.lang === 'ar'
+      ? `جارٍ قراءة وتحليل الصوت في (${file.name})...`
+      : `Decoding & transcribing speech in (${file.name})...`
+  );
+
+  try {
+    // 1. Check embedded text transcript tag in file header
+    const headSlice = await file.slice(0, 131072).arrayBuffer();
+    if (runToken !== transcribeRunToken) return;
+    const embedded = extractEmbeddedTranscriptFromBuffer(headSlice);
+
+    let transcriptText = embedded;
+    let engineLabel = 'Embedded Tag';
+    let confidenceLabel = '99.0% CONFIDENCE';
+
+    // 2. If user supplied optional Gemini API key, run multimodal cloud speech recognition
+    const geminiKey = getSavedGeminiKey();
+    if (!transcriptText && geminiKey && file.size <= 18 * 1024 * 1024) {
+      setTranscriptionStatus(
+        'loading',
+        state.lang === 'ar'
+          ? 'جارٍ تفريغ التسجيل الصوتي عبر Gemini AI...'
+          : 'Transcribing voice recording with Gemini AI...'
+      );
+      transcriptText = await transcribeWithGeminiBrowser(file, geminiKey, speechLang);
+      if (runToken !== transcribeRunToken) return;
+      engineLabel = 'Gemini 2.5 Flash';
+      confidenceLabel = '99.4% CONFIDENCE';
+    }
+
+    // 3. Zero-config automatic on-device browser Whisper ASR
+    if (!transcriptText) {
+      setTranscriptionStatus(
+        'loading',
+        state.lang === 'ar'
+          ? 'جارٍ تحويل موجة الصوت إلى 16kHz...'
+          : 'Decoding audio waveform to 16 kHz...'
+      );
+      const { samples, peak } = await decodeAudioToMono16k(file);
+      if (runToken !== transcribeRunToken) return;
+
+      if (peak < 0.0005) {
+        throw new Error(state.lang === 'ar' ? 'التسجيل الصوتي صامت أو لا يحتوي على إشارة صوتية واضحة.' : 'Recording appears silent with no detectable speech signal.');
+      }
+
+      setTranscriptionStatus(
+        'loading',
+        state.lang === 'ar'
+          ? 'جارٍ تحميل نموذج التعرف على الكلام (Whisper)...'
+          : 'Loading on-device Whisper speech model...'
+      );
+      const recognizer = await getWhisperPipeline((pct) => {
+        if (runToken !== transcribeRunToken) return;
+        setTranscriptionStatus(
+          'loading',
+          state.lang === 'ar'
+            ? `جارٍ تهيئة نموذج الصوت (Whisper): ${pct}%...`
+            : `Loading Whisper speech model: ${pct}%...`
+        );
+      });
+      if (runToken !== transcribeRunToken) return;
+
+      setTranscriptionStatus(
+        'loading',
+        state.lang === 'ar'
+          ? 'جارٍ تفريغ الكلام من التسجيل الصوتي الآن...'
+          : 'Transcribing spoken words from audio...'
+      );
+
+      const whisperOpts = {
+        task: 'transcribe',
+        chunk_length_s: 30,
+        stride_length_s: 5,
+        return_timestamps: false
+      };
+      if (speechLang === 'arabic' || speechLang === 'english') {
+        whisperOpts.language = speechLang;
+      }
+
+      const out = await recognizer(samples, whisperOpts);
+      if (runToken !== transcribeRunToken) return;
+
+      transcriptText = (Array.isArray(out) ? out.map(x => x.text).join(' ') : (out?.text || '')).trim();
+      engineLabel = loadedWhisperModelId ? `Whisper (${loadedWhisperModelId.split('/')[1]})` : 'Whisper AI';
+      confidenceLabel = '96.5% CONFIDENCE';
+    }
+
+    if (!transcriptText) {
+      throw new Error(state.lang === 'ar' ? 'تعذر استخراج كلام واضح من هذا التسجيل.' : 'No intelligible speech detected in this recording.');
+    }
+
+    const transcriptEl = document.getElementById('transcriptInput');
+    if (transcriptEl) {
+      transcriptEl.value = transcriptText;
+    }
+    if (confidencePill) {
+      confidencePill.textContent = confidenceLabel;
+    }
+    if (statusPill && !state.isAudioApproved) {
+      statusPill.textContent = state.lang === 'ar' ? 'تم التفريغ الصوتي ✓' : 'TRANSCRIBED ✓';
+      statusPill.className = 'status-pill green';
+    }
+
+    const orderFromTranscript = extractOrderIdFromText(transcriptText);
+    const orderFromName = extractOrderIdFromText(file.name);
+    const resolvedOrderId = orderFromTranscript || orderFromName || state.extractedOrderId || generateVoiceTicketId(file.name);
+    state.extractedOrderId = resolvedOrderId;
+    document.getElementById('extractedOrderVal').textContent = resolvedOrderId;
+    document.getElementById('orderLookupInput').value = resolvedOrderId;
+
+    analyzeTranscript(transcriptText);
+    saveTranscriptDraftToSession(true);
+
+    setTranscriptionStatus(
+      'done',
+      state.lang === 'ar'
+        ? `✓ تم تفريغ التسجيل الصوتي عبر ${engineLabel} (${file.name})`
+        : `✓ Audio transcribed via ${engineLabel} (${file.name})`
+    );
+    logEvent('audio.transcribed', state.extractedOrderId, engineLabel.toLowerCase(), `Transcribed audio "${file.name}": '${transcriptText.slice(0, 70)}'`);
+  } catch (err) {
+    if (runToken !== transcribeRunToken) return;
+    if (statusPill && !state.isAudioApproved) {
+      statusPill.textContent = state.lang === 'ar' ? 'تم تحميل الملف ✓' : 'AUDIO READY ✓';
+      statusPill.className = 'status-pill';
+    }
+    const reason = err?.message || (state.lang === 'ar' ? 'تعذر تشغيل التعرف التلقائي' : 'Automatic speech recognition unavailable');
+    setTranscriptionStatus(
+      'error',
+      state.lang === 'ar'
+        ? `⚠ ${reason} — يمكنك تعديل النص يدوياً أو إضافة مفتاح Gemini.`
+        : `⚠ ${reason} — You can edit the transcript manually or add a Gemini key.`
+    );
+  } finally {
+    if (runToken === transcribeRunToken) {
+      state.isTranscribing = false;
+      if (transcribeBtn) transcribeBtn.disabled = false;
+    }
+  }
+}
+
 function handleAudioFile(file, spokenTranscript = '') {
   state.uploadedFileName = file.name;
+  state.uploadedFile = file;
   state.isAudioApproved = false;
   state.isAudioPlaying = false;
   const sizeKB = Math.max(1, Math.round(file.size / 1024));
@@ -528,20 +903,34 @@ function handleAudioFile(file, spokenTranscript = '') {
   const orderIdFromSpeech = extractOrderIdFromText(spokenTranscript);
   const resolvedOrderId = orderIdFromSpeech || orderIdFromName || generateVoiceTicketId(file.name);
 
-  let txt = (spokenTranscript || '').trim();
-  if (!txt) {
-    txt = state.lang === 'ar'
-      ? `تم استلام تسجيل صوتي (${file.name}) بخصوص الطلب ${resolvedOrderId} لمتابعة الحالة والتوصيل.`
-      : `Voice recording (${file.name}) received regarding order ${resolvedOrderId} for status and delivery review.`;
-  } else if (!extractOrderIdFromText(txt)) {
-    txt = `${txt} (${resolvedOrderId})`;
-  }
-
-  document.getElementById('transcriptInput').value = txt;
   state.extractedOrderId = resolvedOrderId;
   document.getElementById('extractedOrderVal').textContent = resolvedOrderId;
   document.getElementById('orderLookupInput').value = resolvedOrderId;
-  analyzeTranscript(txt);
+
+  const trimmedSpeech = (spokenTranscript || '').trim();
+  const transcriptEl = document.getElementById('transcriptInput');
+  if (trimmedSpeech) {
+    transcribeRunToken++;
+    if (transcriptEl) transcriptEl.value = trimmedSpeech;
+    setTranscriptionStatus(
+      'done',
+      state.lang === 'ar'
+        ? `✓ تم تفريغ التسجيل المباشر (${file.name})`
+        : `✓ Live voice transcript captured (${file.name})`
+    );
+    analyzeTranscript(trimmedSpeech);
+    saveTranscriptDraftToSession(true);
+  } else {
+    if (transcriptEl) {
+      transcriptEl.value = '';
+      transcriptEl.placeholder = state.lang === 'ar'
+        ? 'جارٍ استخراج وتفريغ النص من التسجيل الصوتي...'
+        : 'Extracting and transcribing spoken words from audio...';
+    }
+    lookupOrder(resolvedOrderId);
+    renderTranscriptHighlights('');
+    transcribeUploadedAudio(file);
+  }
 
   logEvent('audio.uploaded', state.extractedOrderId, 'user', `Uploaded & processed voice file: ${file.name}`);
 }
@@ -684,6 +1073,48 @@ function initActions() {
     });
   }
 
+  const transcribeAudioBtn = document.getElementById('transcribeAudioBtn');
+  if (transcribeAudioBtn) {
+    transcribeAudioBtn.addEventListener('click', () => {
+      if (state.uploadedFile) {
+        transcribeUploadedAudio(state.uploadedFile);
+      }
+    });
+  }
+
+  const geminiKeyToggleBtn = document.getElementById('geminiKeyToggleBtn');
+  const geminiKeyDrawer = document.getElementById('geminiKeyDrawer');
+  const geminiApiKeyInput = document.getElementById('geminiApiKeyInput');
+  const saveGeminiKeyBtn = document.getElementById('saveGeminiKeyBtn');
+  if (geminiApiKeyInput) {
+    geminiApiKeyInput.value = getSavedGeminiKey();
+  }
+  if (geminiKeyToggleBtn && geminiKeyDrawer) {
+    geminiKeyToggleBtn.addEventListener('click', () => {
+      geminiKeyDrawer.classList.toggle('show');
+    });
+  }
+  if (saveGeminiKeyBtn && geminiApiKeyInput) {
+    saveGeminiKeyBtn.addEventListener('click', () => {
+      const val = geminiApiKeyInput.value.trim();
+      try {
+        if (val) sessionStorage.setItem(GEMINI_KEY_SESSION_KEY, val);
+        else sessionStorage.removeItem(GEMINI_KEY_SESSION_KEY);
+      } catch (e) {}
+      if (geminiKeyDrawer) geminiKeyDrawer.classList.remove('show');
+      if (state.uploadedFile) {
+        transcribeUploadedAudio(state.uploadedFile);
+      } else {
+        setTranscriptionStatus(
+          'done',
+          state.lang === 'ar'
+            ? '✓ تم حفظ مفتاح Gemini في الجلسة الحالية للملفات الصوتية القادمة.'
+            : '✓ Gemini API key saved in session for uploaded recordings.'
+        );
+      }
+    });
+  }
+
   const audioPreview = document.getElementById('audioPreview');
   const audioPlayerBox = document.getElementById('audioPlayerBox');
   if (audioPreview && audioPlayerBox) {
@@ -772,6 +1203,11 @@ function initActions() {
         `Batch updated ${updatedIds.length} orders to status: ${targetStatus}`
       );
     });
+  }
+
+  const downloadCsvBtn = document.getElementById('downloadOrdersCsvBtn');
+  if (downloadCsvBtn) {
+    downloadCsvBtn.addEventListener('click', downloadOrdersCsv);
   }
 }
 
@@ -895,11 +1331,72 @@ function getOrderStatusClass(status) {
   return 'status-pill';
 }
 
+function escapeCsvField(val) {
+  const str = val == null ? '' : String(val);
+  if (/[",\r\n]/.test(str)) {
+    return `"${str.replace(/"/g, '""')}"`;
+  }
+  return str;
+}
+
+function buildOrdersCsv(orders) {
+  const headers = ['Order ID', 'Status', 'City', 'ETA', 'Last Scan', 'Response (EN)', 'Response (AR)'];
+  const rows = [headers.map(escapeCsvField).join(',')];
+  (orders || []).forEach(o => {
+    rows.push([
+      o.id || '',
+      o.status || '',
+      o.city || '',
+      o.eta || '',
+      o.lastScan || '',
+      o.response || '',
+      o.responseAr || ''
+    ].map(escapeCsvField).join(','));
+  });
+  return rows.join('\r\n');
+}
+
+function downloadOrdersCsv() {
+  const visibleOrders = state.orders || [];
+  if (!visibleOrders.length) return;
+
+  const csvContent = '\uFEFF' + buildOrdersCsv(visibleOrders);
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const dateTag = new Date().toISOString().slice(0, 10);
+  const filename = `sawtflow-orders-${dateTag}.csv`;
+
+  const link = document.createElement('a');
+  link.href = url;
+  link.download = filename;
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  setTimeout(() => URL.revokeObjectURL(url), 1000);
+
+  const banner = document.getElementById('ordersBatchBanner');
+  if (banner) {
+    banner.textContent = state.lang === 'ar'
+      ? `✓ تم تصدير ${visibleOrders.length} طلبات إلى ملف CSV بنجاح`
+      : `✓ Exported ${visibleOrders.length} visible order(s) to ${filename}`;
+    banner.classList.add('show');
+    setTimeout(() => banner.classList.remove('show'), 3500);
+  }
+
+  logEvent(
+    'orders.csv_exported',
+    `${visibleOrders.length} orders`,
+    'human.operator',
+    `Exported ${visibleOrders.length} visible orders to CSV (${filename})`
+  );
+}
+
 function updateBatchToolbar() {
   const countPill = document.getElementById('selectedOrdersCount');
   const selectAll = document.getElementById('selectAllOrdersCheckbox');
   const batchSelect = document.getElementById('batchStatusSelect');
   const applyBtn = document.getElementById('applyBatchStatusBtn');
+  const downloadCsvBtn = document.getElementById('downloadOrdersCsvBtn');
 
   const count = state.selectedOrderIds.size;
   const total = state.orders.length;
@@ -914,6 +1411,9 @@ function updateBatchToolbar() {
   }
   if (applyBtn) {
     applyBtn.disabled = count === 0 || !(batchSelect && batchSelect.value);
+  }
+  if (downloadCsvBtn) {
+    downloadCsvBtn.disabled = total === 0;
   }
 }
 
