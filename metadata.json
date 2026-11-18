@@ -1,5 +1,5 @@
 {
-  "name": "Sound Flow",
+  "name": "Sawt Flow",
   "description": "Arabic and English voice intelligence for business automation, turning customer conversations into verified actions.",
   "requestFramePermissions": [],
   "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]

@@ -68,10 +68,10 @@ fun SawtFlowHeader(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(10.dp)
         ) {
-            // Sound Flow Brand Logo
+            // Sawt Flow Brand Logo
             Image(
                 painter = painterResource(id = R.drawable.ic_sawtflow_brand_logo),
-                contentDescription = "Sound Flow Brand Logo",
+                contentDescription = "Sawt Flow Brand Logo",
                 modifier = Modifier
                     .size(36.dp)
                     .clip(CircleShape)
@@ -79,7 +79,7 @@ fun SawtFlowHeader(
 
             Row {
                 Text(
-                    text = "Sound ",
+                    text = "Sawt ",
                     color = Color.White,
                     fontSize = 20.sp,
                     fontWeight = FontWeight.ExtraBold,

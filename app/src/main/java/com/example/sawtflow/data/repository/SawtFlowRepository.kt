@@ -135,7 +135,7 @@ class SawtFlowRepository {
                 eventType = "system.startup",
                 orderId = null,
                 actor = "system",
-                details = "Sound Flow Arabic & English Voice Intelligence initialized with 11 operational records",
+                details = "Sawt Flow Arabic & English Voice Intelligence initialized with 11 operational records",
                 timestampFormatted = formatCurrentTime()
             )
         )

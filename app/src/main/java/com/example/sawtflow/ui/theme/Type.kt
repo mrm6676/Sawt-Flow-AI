@@ -24,7 +24,7 @@ val TajawalFontFamily = FontFamily(
 val CairoFontFamily = TajawalFontFamily
 val OutfitFontFamily = TajawalFontFamily
 
-// Default font family for Sound Flow application
+// Default font family for Sawt Flow application
 val SawtFlowFontFamily = TajawalFontFamily
 
 val SawtFlowTypography = Typography(

@@ -19,5 +19,5 @@ dependencyResolutionManagement {
     }
 }
 
-rootProject.name = "SoundFlow"
+rootProject.name = "SawtFlow"
 include(":app")

@@ -1,9 +1,9 @@
 <resources>
-    <string name="app_name">Sound Flow</string>
+    <string name="app_name">Sawt Flow</string>
     <string name="brand_subtitle">Arabic &amp; English Voice Intelligence</string>
     <string name="hero_arabic_quote">فهمٌ أدق. قراراتٌ أوثق. عملٌ أسرع.</string>
     <string name="hero_tagline">Speech that makes business move.</string>
-    <string name="hero_description">Sound Flow understands how your customers really speak—across Arabic dialects, English, code-switching, noisy calls, and the intent hiding between the words.</string>
+    <string name="hero_description">Sawt Flow understands how your customers really speak—across Arabic dialects, English, code-switching, noisy calls, and the intent hiding between the words.</string>
     
     <!-- Navigation -->
     <string name="tab_studio">Studio</string>
@@ -46,7 +46,7 @@
     <string name="action_approve">Approve Response ✓</string>
     
     <string name="transcript_title">Correct the meaning, not the speaker.</string>
-    <string name="transcript_lead">Sound Flow preserves intent while you refine recognition errors.</string>
+    <string name="transcript_lead">Sawt Flow preserves intent while you refine recognition errors.</string>
     <string name="intent_title">What the customer needs.</string>
     <string name="action_title">Retrieve the right evidence.</string>
     <string name="response_title">Respond with context.</string>
@@ -80,7 +80,7 @@
     
     <!-- Trust & Verification -->
     <string name="trust_title">Control stays explicit.</string>
-    <string name="trust_desc">Your customer conversations carry context. Sound Flow protects it with a deliberate action layer: retrieve, check, confirm, then respond.</string>
+    <string name="trust_desc">Your customer conversations carry context. Sawt Flow protects it with a deliberate action layer: retrieve, check, confirm, then respond.</string>
     
     <!-- Contact Us & Footer -->
     <string name="contact_us_title">Contact Us</string>
@@ -90,6 +90,6 @@
     <string name="input_contact_message">Your Message</string>
     <string name="btn_send_email">Send Email</string>
     <string name="contact_submitted_msg">Thank you! Your message has been sent and logged.</string>
-    <string name="footer_connect">Connect with Sound Flow</string>
-    <string name="footer_copyright">© 2026 Sound Flow AI · Arabic &amp; English Voice Intelligence</string>
+    <string name="footer_connect">Connect with Sawt Flow</string>
+    <string name="footer_copyright">© 2026 Sawt Flow AI · Arabic &amp; English Voice Intelligence</string>
 </resources>

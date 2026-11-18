@@ -176,7 +176,7 @@ fun StudioScreen(
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
-                    text = if (isAr) "استوديو SOUND FLOW / مساحة الذكاء الصوتي" else "SOUND FLOW STUDIO / VOICE INTELLIGENCE WORKSPACE",
+                    text = if (isAr) "استوديو SAWT FLOW / مساحة الذكاء الصوتي" else "SAWT FLOW STUDIO / VOICE INTELLIGENCE WORKSPACE",
                     color = CyanAccent,
                     fontSize = 11.sp,
                     fontWeight = FontWeight.Bold,
@@ -739,7 +739,7 @@ fun StudioScreen(
                             fontWeight = FontWeight.Bold
                         )
                         Text(
-                            text = if (isAr) "يحافظ Sound Flow على النية بينما تنقّح الأخطاء." else "Sound Flow preserves intent while you refine errors.",
+                            text = if (isAr) "يحافظ Sawt Flow على النية بينما تنقّح الأخطاء." else "Sawt Flow preserves intent while you refine errors.",
                             color = Color.White.copy(alpha = 0.75f),
                             fontSize = 13.sp
                         )

@@ -161,9 +161,9 @@ fun OrdersScreen(
                 )
                 Text(
                     text = if (isAr)
-                        "انقر على أي طلب للبحث فيه مباشرة في استوديو Sound Flow والتحقق من الاستجابة."
+                        "انقر على أي طلب للبحث فيه مباشرة في استوديو Sawt Flow والتحقق من الاستجابة."
                     else
-                        "Tap any order to test lookup immediately in Sound Flow Studio.",
+                        "Tap any order to test lookup immediately in Sawt Flow Studio.",
                     color = Color.White.copy(alpha = 0.75f),
                     fontSize = 13.sp
                 )
@@ -174,7 +174,7 @@ fun OrdersScreen(
             OutlinedButton(
                 onClick = {
                     val dateStamp = SimpleDateFormat("yyyy-MM-dd", Locale.US).format(Date())
-                    createCsvLauncher.launch("soundflow-orders-$dateStamp.csv")
+                    createCsvLauncher.launch("sawtflow-orders-$dateStamp.csv")
                 },
                 enabled = filteredOrders.isNotEmpty(),
                 modifier = Modifier

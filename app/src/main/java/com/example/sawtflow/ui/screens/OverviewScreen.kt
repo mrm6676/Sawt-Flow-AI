@@ -148,9 +148,9 @@ fun OverviewScreen(
 
                 Text(
                     text = if (isAr)
-                        "يفهم Sound Flow طريقة حديث عملائك الحقيقية—بالعربية ولهجاتها أو بالإنجليزية أو بالمزج بينهما، والنية المختبئة بين الكلمات."
+                        "يفهم Sawt Flow طريقة حديث عملائك الحقيقية—بالعربية ولهجاتها أو بالإنجليزية أو بالمزج بينهما، والنية المختبئة بين الكلمات."
                     else
-                        "Sound Flow understands how your customers really speak—across Arabic dialects, English, code-switching, noisy calls, and the intent hiding between the words.",
+                        "Sawt Flow understands how your customers really speak—across Arabic dialects, English, code-switching, noisy calls, and the intent hiding between the words.",
                     color = Color.White.copy(alpha = 0.85f),
                     fontSize = 14.sp,
                     lineHeight = 20.sp
@@ -163,7 +163,7 @@ fun OverviewScreen(
                     shape = RoundedCornerShape(10.dp)
                 ) {
                     Text(
-                        text = if (isAr) "فتح استوديو Sound Flow ←" else "Launch Sound Flow Studio →",
+                        text = if (isAr) "فتح استوديو Sawt Flow ←" else "Launch Sawt Flow Studio →",
                         color = NavyPrimary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 14.sp
@@ -313,7 +313,7 @@ fun OverviewScreen(
 
                 Text(
                     text = if (isAr)
-                        "هل لديك استفسار حول أتمتة الصوت العربي أو التكامل مع أنظمتك؟ تواصل مع فريق Sound Flow عبر البريد الإلكتروني."
+                        "هل لديك استفسار حول أتمتة الصوت العربي أو التكامل مع أنظمتك؟ تواصل مع فريق Sawt Flow عبر البريد الإلكتروني."
                     else
                         "Have a question about Arabic & English voice automation or integrations? Reach out to our team directly.",
                     color = Color.White.copy(alpha = 0.75f),
@@ -486,13 +486,13 @@ fun OverviewScreen(
                 ) {
                     Image(
                         painter = painterResource(id = R.drawable.ic_sawtflow_brand_logo),
-                        contentDescription = "Sound Flow Logo",
+                        contentDescription = "Sawt Flow Logo",
                         modifier = Modifier
                             .size(32.dp)
                             .clip(CircleShape)
                     )
                     Text(
-                        text = "Sound Flow AI",
+                        text = "Sawt Flow AI",
                         color = Color.White,
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold
@@ -500,7 +500,7 @@ fun OverviewScreen(
                 }
 
                 Text(
-                    text = if (isAr) "تابعنا وتواصل معنا عبر المنصات الاجتماعية" else "Connect with Sound Flow on social media",
+                    text = if (isAr) "تابعنا وتواصل معنا عبر المنصات الاجتماعية" else "Connect with Sawt Flow on social media",
                     color = Color.White.copy(alpha = 0.7f),
                     fontSize = 12.sp
                 )
@@ -558,9 +558,9 @@ fun OverviewScreen(
 
                 Text(
                     text = if (isAr)
-                        "© 2026 Sound Flow AI · ذكاء الصوت العربي والإنجليزي لأتمتة الأعمال"
+                        "© 2026 Sawt Flow AI · ذكاء الصوت العربي والإنجليزي لأتمتة الأعمال"
                     else
-                        "© 2026 Sound Flow AI · Arabic & English Voice Intelligence",
+                        "© 2026 Sawt Flow AI · Arabic & English Voice Intelligence",
                     color = Color.White.copy(alpha = 0.5f),
                     fontSize = 11.sp
                 )

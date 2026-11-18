@@ -68,7 +68,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   restoreTranscriptDraft();
   state.draftReady = true;
   initTranscriptAutoSave();
-  logEvent('system.startup', null, 'system', `Sound Flow Studio initialized with ${state.orders.length} operational order records`);
+  logEvent('system.startup', null, 'system', `Sawt Flow Studio initialized with ${state.orders.length} operational order records`);
   renderHistory();
 });
 
@@ -1399,7 +1399,7 @@ function downloadOrdersCsv() {
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const url = URL.createObjectURL(blob);
   const dateTag = new Date().toISOString().slice(0, 10);
-  const filename = `soundflow-orders-${dateTag}.csv`;
+  const filename = `sawtflow-orders-${dateTag}.csv`;
 
   const link = document.createElement('a');
   link.href = url;

@@ -415,7 +415,7 @@ fun HistoryScreen(
                     onDelete = { viewModel.deleteSavedTranscript(item.id) },
                     onCopy = {
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val clip = ClipData.newPlainText("Sound Flow Transcript", item.transcript)
+                        val clip = ClipData.newPlainText("Sawt Flow Transcript", item.transcript)
                         clipboard.setPrimaryClip(clip)
                         Toast.makeText(
                             context,
