@@ -19,17 +19,32 @@ import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
 import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.key.Key
+import androidx.compose.ui.input.key.KeyEventType
+import androidx.compose.ui.input.key.isAltPressed
+import androidx.compose.ui.input.key.isCtrlPressed
+import androidx.compose.ui.input.key.isMetaPressed
+import androidx.compose.ui.input.key.isShiftPressed
+import androidx.compose.ui.input.key.key
+import androidx.compose.ui.input.key.onPreviewKeyEvent
+import androidx.compose.ui.input.key.type
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalLayoutDirection
 import androidx.compose.ui.unit.LayoutDirection
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import kotlinx.coroutines.launch
 import com.example.sawtflow.data.model.AppLanguage
 import com.example.sawtflow.ui.components.SawtFlowHeader
 import com.example.sawtflow.ui.screens.AuditScreen
@@ -67,6 +82,16 @@ fun SawtFlowApp(viewModel: SawtFlowViewModel) {
     val state by viewModel.uiState.collectAsState()
     val isAr = state.language == AppLanguage.AR
     val layoutDirection = if (isAr) LayoutDirection.Rtl else LayoutDirection.Ltr
+    val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
+    val coroutineScope = rememberCoroutineScope()
+
+    fun showShortcutHint(msg: String) {
+        coroutineScope.launch {
+            snackbarHostState.currentSnackbarData?.dismiss()
+            snackbarHostState.showSnackbar(msg)
+        }
+    }
 
     // Handle Android system back button when not on primary Studio tab
     if (state.currentTab != AppTab.STUDIO) {
@@ -77,6 +102,52 @@ fun SawtFlowApp(viewModel: SawtFlowViewModel) {
 
     CompositionLocalProvider(LocalLayoutDirection provides layoutDirection) {
         Scaffold(
+            modifier = Modifier.onPreviewKeyEvent { keyEvent ->
+                if (keyEvent.type != KeyEventType.KeyDown) return@onPreviewKeyEvent false
+                val modPressed = keyEvent.isCtrlPressed || keyEvent.isMetaPressed
+                val key = keyEvent.key
+                when {
+                    // Ctrl+Shift+Enter -> Approve & Dispatch
+                    modPressed && keyEvent.isShiftPressed && (key == Key.Enter || key == Key.NumPadEnter) -> {
+                        viewModel.selectTab(AppTab.STUDIO)
+                        viewModel.approveAction()
+                        showShortcutHint(
+                            if (isAr) "تم اعتماد وإرسال الرد (Ctrl+Shift+Enter)" else "Response approved & dispatched (Ctrl+Shift+Enter)"
+                        )
+                        true
+                    }
+                    // Ctrl+Enter -> Trigger audio transcription (Gemini)
+                    modPressed && !keyEvent.isShiftPressed && !keyEvent.isAltPressed && (key == Key.Enter || key == Key.NumPadEnter) -> {
+                        viewModel.selectTab(AppTab.STUDIO)
+                        viewModel.transcribeAudioWithGemini(context)
+                        showShortcutHint(
+                            if (isAr) "جارٍ تفريغ الصوت (Ctrl+Enter)" else "Transcribing audio (Ctrl+Enter)"
+                        )
+                        true
+                    }
+                    // Ctrl+S -> Save current transcript to History
+                    modPressed && !keyEvent.isShiftPressed && !keyEvent.isAltPressed && key == Key.S -> {
+                        viewModel.saveCurrentTranscriptToHistory("Shortcut Saved")
+                        showShortcutHint(
+                            if (isAr) "تم حفظ التفريغ في السجل (Ctrl+S)" else "Transcript saved to History (Ctrl+S)"
+                        )
+                        true
+                    }
+                    // Alt+L -> Toggle language
+                    keyEvent.isAltPressed && !modPressed && key == Key.L -> {
+                        viewModel.toggleLanguage()
+                        true
+                    }
+                    // Alt+1..5 -> Switch tabs
+                    keyEvent.isAltPressed && !modPressed && key == Key.One -> { viewModel.selectTab(AppTab.STUDIO); true }
+                    keyEvent.isAltPressed && !modPressed && key == Key.Two -> { viewModel.selectTab(AppTab.HISTORY); true }
+                    keyEvent.isAltPressed && !modPressed && key == Key.Three -> { viewModel.selectTab(AppTab.ORDERS); true }
+                    keyEvent.isAltPressed && !modPressed && key == Key.Four -> { viewModel.selectTab(AppTab.AUDIT); true }
+                    keyEvent.isAltPressed && !modPressed && key == Key.Five -> { viewModel.selectTab(AppTab.OVERVIEW); true }
+                    else -> false
+                }
+            },
+            snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
             topBar = {
                 SawtFlowHeader(
                     currentLanguage = state.language,

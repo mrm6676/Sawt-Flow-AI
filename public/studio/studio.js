@@ -63,6 +63,7 @@ document.addEventListener('DOMContentLoaded', async () => {
   initDropzone();
   initRecorder();
   initActions();
+  initKeyboardShortcuts();
   initStreamBanner();
   setDialect('gulf');
   restoreTranscriptDraft();
@@ -1892,6 +1893,189 @@ function initTranscriptAutoSave() {
   document.addEventListener('visibilitychange', () => {
     if (document.visibilityState === 'hidden') {
       saveTranscriptDraftToSession(false);
+    }
+  });
+}
+
+let shortcutToastTimer = null;
+
+function showShortcutToast(message, variant = 'default') {
+  const toast = document.getElementById('globalShortcutToast');
+  if (!toast) return;
+  toast.textContent = message;
+  toast.className = 'shortcut-toast show';
+  if (variant === 'success') toast.classList.add('is-success');
+  else if (variant === 'warn') toast.classList.add('is-warn');
+  clearTimeout(shortcutToastTimer);
+  shortcutToastTimer = setTimeout(() => {
+    toast.classList.remove('show');
+  }, 2600);
+}
+
+function activateStudioTab(tabKey) {
+  const btn = document.querySelector(`.tab-btn[data-tab="${tabKey}"]`);
+  if (btn && !btn.classList.contains('active')) {
+    btn.click();
+  }
+}
+
+function initKeyboardShortcuts() {
+  const isMac = /Mac|iPod|iPhone|iPad/i.test(navigator.platform || navigator.userAgent || '');
+  const modLabel = isMac ? '⌘' : 'Ctrl';
+
+  document.querySelectorAll('[data-shortcut-mod]').forEach(el => {
+    const suffix = el.dataset.shortcutMod === 'Shift+Enter' ? '⇧+Enter' : el.dataset.shortcutMod;
+    el.textContent = `${modLabel}+${suffix}`;
+  });
+
+  const modal = document.getElementById('shortcutsModal');
+  const openBtn = document.getElementById('shortcutsHelpBtn');
+  const closeBtn = document.getElementById('closeShortcutsModalBtn');
+
+  const setModalOpen = (open) => {
+    if (!modal) return;
+    modal.hidden = !open;
+  };
+
+  if (openBtn) {
+    openBtn.addEventListener('click', () => setModalOpen(modal ? modal.hidden : true));
+  }
+  if (closeBtn) {
+    closeBtn.addEventListener('click', () => setModalOpen(false));
+  }
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) setModalOpen(false);
+    });
+  }
+
+  document.addEventListener('keydown', (e) => {
+    const modPressed = e.ctrlKey || e.metaKey;
+    const keyLower = (e.key || '').toLowerCase();
+    const activeEl = document.activeElement;
+    const isTypingTarget = activeEl && (
+      activeEl.tagName === 'INPUT' ||
+      activeEl.tagName === 'TEXTAREA' ||
+      activeEl.tagName === 'SELECT' ||
+      activeEl.isContentEditable
+    );
+
+    // Esc: close open shortcuts modal or Gemini key drawer
+    if (e.key === 'Escape') {
+      if (modal && !modal.hidden) {
+        setModalOpen(false);
+        return;
+      }
+      const keyDrawer = document.getElementById('geminiKeyDrawer');
+      if (keyDrawer && keyDrawer.classList.contains('show')) {
+        keyDrawer.classList.remove('show');
+      }
+      return;
+    }
+
+    // '?' outside text fields toggles the Keyboard Shortcuts guide
+    if (!modPressed && !e.altKey && !isTypingTarget && (e.key === '?' || (e.shiftKey && e.code === 'Slash'))) {
+      e.preventDefault();
+      setModalOpen(modal ? modal.hidden : true);
+      return;
+    }
+
+    // Ctrl+Shift+Enter / Cmd+Shift+Enter -> Approve & Dispatch final response (Step 05)
+    if (modPressed && e.shiftKey && (e.key === 'Enter' || e.code === 'Enter')) {
+      e.preventDefault();
+      activateStudioTab('studio');
+      const approveBtn = document.getElementById('approveBtn');
+      if (approveBtn) {
+        approveBtn.click();
+        showShortcutToast(
+          state.lang === 'ar'
+            ? `✓ تم اعتماد وإرسال الرد (${modLabel}+⇧+Enter)`
+            : `✓ Response approved & dispatched (${modLabel}+⇧+Enter)`,
+          'success'
+        );
+      }
+      return;
+    }
+
+    // Ctrl+Enter / Cmd+Enter -> Trigger audio transcription (or intent analysis if no file loaded)
+    if (modPressed && !e.shiftKey && !e.altKey && (e.key === 'Enter' || e.code === 'Enter')) {
+      e.preventDefault();
+      activateStudioTab('studio');
+      if (state.uploadedFile) {
+        if (state.isTranscribing) {
+          showShortcutToast(
+            state.lang === 'ar' ? '⏳ التفريغ الصوتي قيد التنفيذ بالفعل...' : '⏳ Transcription already in progress...',
+            'warn'
+          );
+          return;
+        }
+        showShortcutToast(
+          state.lang === 'ar'
+            ? `✨ جارٍ تفريغ الملف الصوتي (${modLabel}+Enter)`
+            : `✨ Transcribing audio (${modLabel}+Enter)`
+        );
+        transcribeUploadedAudio(state.uploadedFile);
+      } else {
+        const analyzeBtn = document.getElementById('analyzeBtn');
+        if (analyzeBtn) analyzeBtn.click();
+        showShortcutToast(
+          state.lang === 'ar'
+            ? `🔍 لا يوجد ملف صوتي محمّل — تم تحليل النص الحالي (${modLabel}+Enter)`
+            : `🔍 No audio uploaded — analyzed current transcript (${modLabel}+Enter)`,
+          'warn'
+        );
+      }
+      return;
+    }
+
+    // Ctrl+S / Cmd+S -> Save current transcript to History (supports Arabic & English IME via e.code)
+    if (modPressed && !e.shiftKey && !e.altKey && (e.code === 'KeyS' || keyLower === 's')) {
+      e.preventDefault();
+      const text = (document.getElementById('transcriptInput')?.value || '').trim();
+      if (!text) {
+        showShortcutToast(
+          state.lang === 'ar' ? '⚠ النص فارغ — اكتب أو فرّغ نصاً أولاً' : '⚠ Transcript is empty — enter or transcribe text first',
+          'warn'
+        );
+        return;
+      }
+      saveCurrentToHistory();
+      showShortcutToast(
+        state.lang === 'ar'
+          ? `💾 تم حفظ التفريغ في السجل (${modLabel}+S)`
+          : `💾 Transcript saved to History (${modLabel}+S)`,
+        'success'
+      );
+      return;
+    }
+
+    // Alt+L -> Toggle Arabic / English UI language
+    if (e.altKey && !modPressed && (e.code === 'KeyL' || keyLower === 'l')) {
+      e.preventDefault();
+      const langBtn = document.getElementById('langToggleBtn');
+      if (langBtn) langBtn.click();
+      showShortcutToast(
+        state.lang === 'ar' ? '🌐 تم التبديل إلى العربية (Alt+L)' : '🌐 Switched to English (Alt+L)'
+      );
+      return;
+    }
+
+    // Alt+1..4 -> Quick tab navigation (Studio / History / Orders / Audit Log)
+    if (e.altKey && !modPressed && !e.shiftKey) {
+      const tabMap = {
+        Digit1: ['studio', 'الاستوديو', 'Studio'],
+        Digit2: ['history', 'السجل', 'History'],
+        Digit3: ['orders', 'الطلبات', 'Orders'],
+        Digit4: ['audit', 'التدقيق', 'Audit Log']
+      };
+      const entry = tabMap[e.code];
+      if (entry) {
+        e.preventDefault();
+        activateStudioTab(entry[0]);
+        showShortcutToast(
+          state.lang === 'ar' ? `📑 ${entry[1]} (Alt+${e.code.slice(-1)})` : `📑 ${entry[2]} Tab (Alt+${e.code.slice(-1)})`
+        );
+      }
     }
   });
 }
